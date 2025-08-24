@@ -5,7 +5,8 @@ Allwinner H618.
 
 ## Details
 
-TODO
+Allwinner H618 is:
+* Quad-Core Cortex-A53 ARM CPU (ARMv8-A)
 
 ## Copyright
 
