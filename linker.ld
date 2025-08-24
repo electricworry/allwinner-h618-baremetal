@@ -1,0 +1,49 @@
+MEMORY
+{
+    sram_a1 (rwx) : ORIGIN = 0x00000000, LENGTH =    0x10000
+    sram_a2 (rwx) : ORIGIN = 0x00044000, LENGTH =     0x8000
+    sram_c  (rwx) : ORIGIN = 0x00010000, LENGTH =     0xB000
+    ram     (rwx) : ORIGIN = 0x40000000, LENGTH = 0x20000000
+}
+
+SECTIONS
+{
+    .text :
+    {
+        . = ALIGN(4);   /* .text segment must be 4-byte aligned */
+        boot.o(.text)   /* put boot.o at start of .text. */
+        *(.text)
+    } > ram
+
+    .bss (NOLOAD) :
+    {
+        . = ALIGN(4);
+        __bss_start__ = . ;
+        *(.bss);
+        *(COMMON);
+        __bss_end__ = . ;
+    } > ram
+
+    .data :
+    {
+        *(.data)
+    } > ram
+
+    .uncached (NOLOAD) : { # was at 0x50000000
+        __bss2_start__ = . ;
+        *(UNCACHED);
+        __bss2_end__ = . ;
+    } > ram
+
+    /* End marker for heap start */
+    . = ALIGN(4);
+    _end = .;    /* Heap starts here and grows upwards */
+
+    /* Stack grows downward from the end of RAM */
+    _stack_size = 64K;
+    _stack_top = ORIGIN(ram) + LENGTH(ram);
+    _stack_bottom = _stack_top - _stack_size;
+    
+    /* Ensure we don't overlap with heap */
+    ASSERT(_end <= _stack_bottom, "Error: Heap collides with stack")
+}
