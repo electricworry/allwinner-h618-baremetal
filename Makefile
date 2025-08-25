@@ -1,5 +1,6 @@
-CC=aarch64-none-elf-gcc
-OBJCOPY=aarch64-none-elf-objcopy
+TOOLCHAIN=../extern/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf/bin
+CC=$(TOOLCHAIN)/aarch64-none-elf-gcc
+OBJCOPY=$(TOOLCHAIN)/aarch64-none-elf-objcopy
 # CFLAGS=-T linker.ld -mfpu=neon -mfloat-abi=hard -mcpu=cortex-a7 -fpic -ffreestanding -O3 -nostdlib -Wextra
 CFLAGS=-T linker.ld -mcpu=cortex-a53 -O0 -Wextra
 

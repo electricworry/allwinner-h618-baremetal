@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 // The UART registers base address.
-#define UART0_BASE 0x01C28000
+#define UART0_BASE 0x05000000
 // Macros to access UART registers.
 #define UART0_RBR *(volatile uint32_t *)(UART0_BASE + 0x00)
 #define UART0_THR *(volatile uint32_t *)(UART0_BASE + 0x00)

@@ -1,6 +1,13 @@
 _reset:
 // cpsid if
 
+LDR x4, =0x05000000
+MOV w5, #0x42
+STRB w5, [x4]
+
+_aaa:
+
+
 // MRC p15,0,r0,c1,c0,2    // Read CP Access register
 // ORR r0,r0,#0x00f00000   // Enable full access to NEON/VFP (Coprocessors 10 and 11)
 // MCR p15,0,r0,c1,c0,2    // Write CP Access register
