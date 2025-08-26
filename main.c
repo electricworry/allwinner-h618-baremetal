@@ -15,6 +15,22 @@ void game_start();
 
 int main(int argc, char *argv[])
 {
+    // Reboot in n seconds using watchdog
+    // reboot(0xb); // 0xb == 16 second reset timer
+    // reboot(2);
+
+
+    int v = 5;
+    int count = 6000000;
+    while(count--)
+    {
+    }
+    printf("Booting!\n");
+    printf("bddress: %d\n", 5); // This fails in a memcpy. Need to enable paging.
+    printf("TEST2\n");
+    uart_putc('b');
+    uart_putc('\n');
+
     // Enble all GPIO
     gpio_init();
 
@@ -26,9 +42,6 @@ int main(int argc, char *argv[])
     // Install interrupts
     install_ivt();
 
-    // Reboot in n seconds using watchdog
-    // reboot(2); // 0x8 == 10 second reset timer
-    reboot(0xb); // 0xb == 16 second reset timer
 
     // Set up MMU and paging configuration
     // mmu_init();

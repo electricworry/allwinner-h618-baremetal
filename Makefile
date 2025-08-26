@@ -36,7 +36,7 @@ clean:
 	rm -f *.o os.*
 
 install: os.bin ../u-boot/spl/sunxi-spl.bin
-	sunxi-fel spl ../u-boot/spl/sunxi-spl.bin write 0x40000000 os.bin exe 0x40000000
+	sunxi-fel spl ../u-boot/spl/sunxi-spl.bin write 0x40000000 os.bin reset64 0x40000000
 
 ../u-boot/spl/sunxi-spl.bin:
 	cd .. && make u-boot/u-boot-sunxi-with-spl.bin

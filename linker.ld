@@ -1,8 +1,8 @@
 MEMORY
 {
-    sram_a1 (rwx) : ORIGIN = 0x00000000, LENGTH =    0x10000
-    sram_a2 (rwx) : ORIGIN = 0x00044000, LENGTH =     0x8000
-    sram_c  (rwx) : ORIGIN = 0x00010000, LENGTH =     0xB000
+    brom    (r)   : ORIGIN = 0x00000000, LENGTH =    0x10000
+    sram_a1 (rwx) : ORIGIN = 0x00020000, LENGTH =     0x8000
+    sram_c  (rwx) : ORIGIN = 0x00028000, LENGTH =    0x30000
     ram     (rwx) : ORIGIN = 0x40000000, LENGTH = 0x20000000
 }
 
@@ -10,14 +10,14 @@ SECTIONS
 {
     .text :
     {
-        . = ALIGN(4);   /* .text segment must be 4-byte aligned */
+        . = ALIGN(16);   /* .text segment must be 4-byte aligned */
         boot.o(.text)   /* put boot.o at start of .text. */
         *(.text)
     } > ram
 
     .bss (NOLOAD) :
     {
-        . = ALIGN(4);
+        . = ALIGN(16);
         __bss_start__ = . ;
         *(.bss);
         *(COMMON);
@@ -36,7 +36,7 @@ SECTIONS
     } > ram
 
     /* End marker for heap start */
-    . = ALIGN(4);
+    . = ALIGN(16);
     _end = .;    /* Heap starts here and grows upwards */
 
     /* Stack grows downward from the end of RAM */

@@ -1,9 +1,17 @@
 _reset:
 // cpsid if
 
+LDR x4, =0x60000000     // TODO: Can this come from linker script?
+mov sp, x4
+
 LDR x4, =0x05000000
-MOV w5, #0x42
+MOV w5, #0x21
 STRB w5, [x4]
+MOV w5, #0x0d
+STRB w5, [x4]
+MOV w5, #0x0a
+STRB w5, [x4]
+bl main
 
 _aaa:
 

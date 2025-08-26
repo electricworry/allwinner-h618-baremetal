@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#define TIMER_BASE    0x01C20C00
+#define TIMER_BASE    0x03009000
 #define WDOG0_MODE    *(volatile uint32_t *)(TIMER_BASE + 0xB8)
 
 void udelay(uint32_t d);
