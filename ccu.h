@@ -1,5 +1,28 @@
 // The CCU registers base address.
-#define CCU_BASE 0x01C20000
+#define CCU_BASE 0x03001000
+
+#define SUN50I_H616_PLL_CPUX_REG           *(volatile uint32_t *)(CCU_BASE + 0x0000)
+#define SUN50I_H616_PLL_DDR0_REG           *(volatile uint32_t *)(CCU_BASE + 0x0010)
+#define SUN50I_H616_PLL_DDR1_REG           *(volatile uint32_t *)(CCU_BASE + 0x0018)
+#define SUN50I_H616_PLL_PERIPH0_REG        *(volatile uint32_t *)(CCU_BASE + 0x0020)
+#define SUN50I_H616_PLL_PERIPH1_REG        *(volatile uint32_t *)(CCU_BASE + 0x0028)
+#define SUN50I_H616_PLL_GPU_REG            *(volatile uint32_t *)(CCU_BASE + 0x0030)
+#define SUN50I_H616_PLL_VIDEO0_REG         *(volatile uint32_t *)(CCU_BASE + 0x0040)
+#define SUN50I_H616_PLL_VIDEO1_REG         *(volatile uint32_t *)(CCU_BASE + 0x0048)
+#define SUN50I_H616_PLL_VIDEO2_REG         *(volatile uint32_t *)(CCU_BASE + 0x0050)
+#define SUN50I_H616_PLL_VE_REG             *(volatile uint32_t *)(CCU_BASE + 0x0058)
+#define SUN50I_H616_PLL_DE_REG             *(volatile uint32_t *)(CCU_BASE + 0x0060)
+#define SUN50I_H616_PLL_AUDIO_REG          *(volatile uint32_t *)(CCU_BASE + 0x0078)
+#define SUN50I_H616_USB0_CLK_REG           *(volatile uint32_t *)(CCU_BASE + 0x0a70)
+#define SUN50I_H616_USB1_CLK_REG           *(volatile uint32_t *)(CCU_BASE + 0x0a74)
+#define SUN50I_H616_USB2_CLK_REG           *(volatile uint32_t *)(CCU_BASE + 0x0a78)
+#define SUN50I_H616_USB3_CLK_REG           *(volatile uint32_t *)(CCU_BASE + 0x0a7c)
+#define SUN50I_H616_GPU_CLK1_REG           *(volatile uint32_t *)(CCU_BASE + 0x0674)
+#define SUN50I_H616_HDMI0_CLK_REG          *(volatile uint32_t *)(CCU_BASE + 0x0b00)
+#define SUN50I_H616_HDMI0_SLOW_CLK_REG     *(volatile uint32_t *)(CCU_BASE + 0x0b04)
+#define SUN50I_H616_HDMI_CEC_CLK_REG       *(volatile uint32_t *)(CCU_BASE + 0x0B10)
+#define SUN50I_H616_HDMI_BGR_REG           *(volatile uint32_t *)(CCU_BASE + 0x0b1c)
+
 
 // Structure of CCU registers.
 #define SUN8I_H3_PLL_AUDIO_REG	0x008
@@ -7,13 +30,11 @@
 
 #define PLL_CPUX_CTRL         *(volatile uint32_t *)(CCU_BASE + 0X000)
 #define PLL_AUDIO_CTRL        *(volatile uint32_t *)(CCU_BASE + 0X008)
-#define PLL_VIDEO_CTRL        *(volatile uint32_t *)(CCU_BASE + 0X010)
 #define PLL_VE_CTRL           *(volatile uint32_t *)(CCU_BASE + 0X018)
 #define PLL_DDR_CTRL          *(volatile uint32_t *)(CCU_BASE + 0X020)
 #define PLL_PERIPH0_CTRL      *(volatile uint32_t *)(CCU_BASE + 0X028)
 #define PLL_GPU_CTRL          *(volatile uint32_t *)(CCU_BASE + 0X038)
 #define PLL_PERIPH1_CTRL      *(volatile uint32_t *)(CCU_BASE + 0X044)
-#define PLL_DE_CTRL           *(volatile uint32_t *)(CCU_BASE + 0X048)
 #define CPUX_AXI_CFG          *(volatile uint32_t *)(CCU_BASE + 0X050)
 #define AHB1_APB1_CFG         *(volatile uint32_t *)(CCU_BASE + 0X054)
 #define APB2_CFG              *(volatile uint32_t *)(CCU_BASE + 0X058)
@@ -48,8 +69,6 @@
 #define VE_CLK                *(volatile uint32_t *)(CCU_BASE + 0X13C)
 #define AC_DIG_CLK            *(volatile uint32_t *)(CCU_BASE + 0X140)
 #define AVS_CLK               *(volatile uint32_t *)(CCU_BASE + 0X144)
-#define HDMI_CLK              *(volatile uint32_t *)(CCU_BASE + 0X150)
-#define HDMI_SLOW_CLK         *(volatile uint32_t *)(CCU_BASE + 0X154)
 #define MBUS_CLK              *(volatile uint32_t *)(CCU_BASE + 0X15C)
 #define GPU_CLK               *(volatile uint32_t *)(CCU_BASE + 0X1A0)
 #define PLL_STABLE_TIME0      *(volatile uint32_t *)(CCU_BASE + 0X200)

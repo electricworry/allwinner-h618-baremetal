@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     reboot(2);
 
     // Enble all GPIO
-    gpio_init();
+    // gpio_init();
 
     // Configure the UART for debugging
     uart_init();
@@ -36,9 +36,12 @@ int main(int argc, char *argv[])
     // Set up MMU and paging configuration
     // mmu_init();
 
-    // Illuminate the power LED
-    set_pin_mode(PORTL, 10, 1); // PORT L10 output
-    set_pin_data(PORTL, 10, 1); // PORT L10 high
+    // Illuminate the red LED - PC12
+    set_pin_mode(PORTC, 12, 1); // PORT PL12 output
+    set_pin_data(PORTC, 12, 1); // PORT PL12 high
+    // Illuminate the green LED - PC13
+    set_pin_mode(PORTC, 13, 1); // PORT PL13 output
+    set_pin_data(PORTC, 13, 1); // PORT PL13 high
 
     // Configure display
     display_init();

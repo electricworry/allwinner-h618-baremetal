@@ -4,8 +4,8 @@
 #define GENMASK(h, l)   (((~((unsigned int)0)) << (l)) & (~(0) >> (32 - 1 - (h))))
 
 // The HDMI registers base address.
-#define HDMI_BASE             0x01EE0000 // allwinner,sun8i-h3-dw-hdmi
-#define HDMI_PHY_BASE         0x01EF0000 // allwinner,sun8i-h3-hdmi-phy
+#define HDMI_BASE             0x6000000 // allwinner,sun50i-h6-dw-hdmi
+#define HDMI_PHY_BASE         0x6010000 // allwinner,sun50i-h616-hdmi-phy
 
 // From drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
 
