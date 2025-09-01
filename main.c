@@ -15,21 +15,11 @@ void game_start();
 
 int main(int argc, char *argv[])
 {
+    printf("Booting!\n");
+
     // Reboot in n seconds using watchdog
     // reboot(0xb); // 0xb == 16 second reset timer
-    // reboot(2);
-
-
-    int v = 5;
-    int count = 6000000;
-    while(count--)
-    {
-    }
-    printf("Booting!\n");
-    printf("bddress: %d\n", 5); // This fails in a memcpy. Need to enable paging.
-    printf("TEST2\n");
-    uart_putc('b');
-    uart_putc('\n');
+    reboot(2);
 
     // Enble all GPIO
     gpio_init();

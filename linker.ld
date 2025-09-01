@@ -10,14 +10,14 @@ SECTIONS
 {
     .text :
     {
-        . = ALIGN(16);   /* .text segment must be 4-byte aligned */
+        . = ALIGN(4);   /* .text segment must be 16-byte aligned */
         boot.o(.text)   /* put boot.o at start of .text. */
         *(.text)
     } > ram
 
     .bss (NOLOAD) :
     {
-        . = ALIGN(16);
+        . = ALIGN(4);
         __bss_start__ = . ;
         *(.bss);
         *(COMMON);
@@ -36,7 +36,7 @@ SECTIONS
     } > ram
 
     /* End marker for heap start */
-    . = ALIGN(16);
+    . = ALIGN(4);
     _end = .;    /* Heap starts here and grows upwards */
 
     /* Stack grows downward from the end of RAM */
