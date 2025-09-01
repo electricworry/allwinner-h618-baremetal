@@ -109,6 +109,8 @@ void display_clocks_init()
 	// 			 24, 2,		/* mux */
 	// 			 BIT(31),	/* gate */
 	// 			 0);
+    SUN50I_H616_HDMI0_CLK_REG |= (1 << 31);
+
 
     // TODO: Enable all of the other things we need.
 
@@ -175,15 +177,62 @@ void hdmi_init() {
     uint32_t val;
     uint8_t bval;
     uint32_t phy_rcal;
+    int ret;
+
+    // START drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c sun8i_dw_hdmi_bind...
+
+        // TODO
+        SUN50I_H616_HDMI_BGR_REG |= (1<<16); // De-assert reset of RST_BUS_HDMI
+        SUN50I_H616_HDMI0_CLK_REG |= (1 << 31); // Enable clock CLK_HDMI (is this done right with rest of bitfield?)
+
+        // START PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun8i_hdmi_phy_init()
+
+            // ret = reset_control_deassert(phy->rst_phy);
+            // if (ret) {
+            //     dev_err(phy->dev, "Cannot deassert phy reset control: %d\n", ret);
+            //     return ret;
+            // }
+            SUN50I_H616_HDMI_BGR_REG |= (1<<17); // De-assert reset of RST_BUS_HDMI_SUB
+
+            // ret = clk_prepare_enable(phy->clk_bus);
+            // if (ret) {
+            //     dev_err(phy->dev, "Cannot enable bus clock: %d\n", ret);
+            //     goto err_assert_rst_phy;
+            // }
+
+            // ret = clk_prepare_enable(phy->clk_mod);
+            // if (ret) {
+            //     dev_err(phy->dev, "Cannot enable mod clock: %d\n", ret);
+            //     goto err_disable_clk_bus;
+            // }
+
+            // if (phy->variant->has_phy_clk) {
+            //     ret = sun8i_phy_clk_create(phy, phy->dev,
+            //                 phy->variant->has_second_pll);
+            //     if (ret) {
+            //         dev_err(phy->dev, "Couldn't create the PHY clock\n");
+            //         goto err_disable_clk_mod;
+            //     }
+
+            //     clk_prepare_enable(phy->clk_phy);
+            // }
+
+            // phy->variant->phy_init(phy);
+
+
+
+        // END PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun8i_hdmi_phy_init()
+    
+    // END drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c sun8i_dw_hdmi_bind...
 
     // START PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun50i_hdmi_phy_init_h6()
 
-	reg_phy_update_bits(SUN8I_HDMI_PHY_REXT_CTRL_REG,
-			   SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN,
-			   SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN);
+        reg_phy_update_bits(SUN8I_HDMI_PHY_REXT_CTRL_REG,
+                SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN,
+                SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN);
 
-	reg_phy_update_bits(SUN8I_HDMI_PHY_REXT_CTRL_REG,
-			   0xffff0000, 0x80c00000);
+        reg_phy_update_bits(SUN8I_HDMI_PHY_REXT_CTRL_REG,
+                0xffff0000, 0x80c00000);
 
     // END PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun50i_hdmi_phy_init_h6()
 
@@ -298,7 +347,7 @@ void hdmi_init() {
                             hdmi_writeb(0x50, HDMI_I2CM_SLAVE);
                             hdmi_writeb(pos, HDMI_I2CM_ADDRESS);
                             hdmi_writeb(HDMI_I2CM_OPERATION_READ, HDMI_I2CM_OPERATION);
-                            udelay(10);
+                            udelay(10000);
                             edid[pos] = hdmi_readb(HDMI_I2CM_DATAI);
                         }
 
