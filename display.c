@@ -12,6 +12,15 @@ volatile uint32_t framebuffer1[512*512] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t framebuffer2[512*512] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t framebuffer3[512*512] __attribute__ ((section ("UNCACHED")));
 
+
+#define HDMI_IH_PHY_STAT0_RX_SENSE \
+	(HDMI_IH_PHY_STAT0_RX_SENSE0 | HDMI_IH_PHY_STAT0_RX_SENSE1 | \
+	 HDMI_IH_PHY_STAT0_RX_SENSE2 | HDMI_IH_PHY_STAT0_RX_SENSE3)
+
+#define HDMI_PHY_RX_SENSE \
+	(HDMI_PHY_RX_SENSE0 | HDMI_PHY_RX_SENSE1 | \
+	 HDMI_PHY_RX_SENSE2 | HDMI_PHY_RX_SENSE3)
+
 uint32_t ccu_readl(uint32_t reg)
 {
     return *(uint32_t *)(CCU_BASE + reg);
@@ -22,17 +31,64 @@ uint32_t ccu_writel(uint32_t val, uint32_t reg)
     return *(uint32_t *)(CCU_BASE + reg);
 }
 
+uint8_t hdmi_readb(uint32_t reg)
+{
+    return *(uint8_t *)(HDMI_BASE + reg);
+}
+
+void hdmi_writeb(uint8_t val, uint32_t reg)
+{
+    *(uint8_t *)(HDMI_BASE + reg) = val;
+}
+
+void reg_phy_write(uint32_t reg, uint32_t val)
+{
+    *(uint32_t *)(HDMI_PHY_BASE + reg) = val;
+}
+
+void reg_phy_read(uint32_t reg, uint32_t *val)
+{
+    *val =  *(uint32_t *)(HDMI_PHY_BASE + reg);
+}
+
+void reg_phy_update_bits(uint32_t reg, uint32_t mask, uint32_t val) 
+{ 
+    uint32_t tmp, orig;
+ 
+    reg_phy_read(reg, &orig);
+ 
+    tmp = orig & ~mask;
+    tmp |= val & mask;
+ 
+    if (tmp != orig)
+        reg_phy_write(reg, tmp);
+}
+
+#define reg_phy_read_poll_timeout(reg, val, cond, sleep_us, timeout_us) \
+({ \
+    uint32_t slept = 0; \
+    for (;;) { \
+        reg_phy_read(reg, &val); \
+        if (cond) \
+            break; \
+        udelay(sleep_us); \
+        slept += sleep_us; \
+        if (timeout_us && slept > timeout_us) \
+            break; \
+    } \
+})
+
 void display_clocks_init()
 {
     uint32_t val;
-    /* This is well documented in the H616 spec, but it is possible to decipher
-       the kernel source for this too. It's less painful than the H3 code.
+    /* This is somewhat documented in the H616 spec, but it is easier to decipher
+       the kernel source for this. It's less painful than the H3 code too.
 
        Everything that needs to be done here can be inferred from
        drivers/clk/sunxi-ng/ccu-sun50i-h616.c in combination with the device-tree.
     */
 
-    // START drivers/clk/sunxi-ng/ccu-sun8i-h3.c sun50i_h616_ccu_probe()
+    // START drivers/clk/sunxi-ng/ccu-sun50i-h616.c sun50i_h616_ccu_probe()
 
         /* Enable the lock bits and the output enable bits on all PLLs */
         SUN50I_H616_PLL_CPUX_REG |= (1 << 29) | (1 << 27);
@@ -95,12 +151,12 @@ void display_clocks_init()
         val |= (1 << 24);
         SUN50I_H616_HDMI_CEC_CLK_REG = val;
 
-    // END drivers/clk/sunxi-ng/ccu-sun8i-h3.c sun50i_h616_ccu_probe()
+    // END drivers/clk/sunxi-ng/ccu-sun50i-h616.c sun50i_h616_ccu_probe()
 
-    SUN50I_H616_HDMI_BGR_REG |= (1<<0); // Enable CLK_BUS_HDMI
-    SUN50I_H616_HDMI_BGR_REG |= (1<<16) | (1<<17); // De-assert reset of RST_BUS_HDMI and RST_BUS_HDMI_SUB
-    SUN50I_H616_HDMI0_SLOW_CLK_REG    = (1<<31); // Enable HDMI slow clk
-
+    // TODO: Enable all of the other things we need.
+    // SUN50I_H616_HDMI_BGR_REG |= (1<<0); // Enable CLK_BUS_HDMI
+    // SUN50I_H616_HDMI_BGR_REG |= (1<<16) | (1<<17); // De-assert reset of RST_BUS_HDMI and RST_BUS_HDMI_SUB
+    // SUN50I_H616_HDMI0_SLOW_CLK_REG    = (1<<31); // Enable HDMI slow clk
     // TODO: Need to enable CLK_HDMI
     // static const char * const hdmi_parents[] = { "pll-video0", "pll-video0-4x",
     //                         "pll-video2", "pll-video2-4x" };
@@ -109,11 +165,7 @@ void display_clocks_init()
 	// 			 24, 2,		/* mux */
 	// 			 BIT(31),	/* gate */
 	// 			 0);
-    SUN50I_H616_HDMI0_CLK_REG |= (1 << 31);
-
-
-    // TODO: Enable all of the other things we need.
-
+    // SUN50I_H616_HDMI0_CLK_REG |= (1 << 31);
     // The following crap from before...
     // Set up shared and dedicated clocks for HDMI, LCD/TCON and DE2
     // PLL_DE_CTRL      = (1<<31) | (1<<24) | (17<<8) | (0<<0); // 432MHz
@@ -125,239 +177,193 @@ void display_clocks_init()
     // TCON0_CLK        = (1<<31) | 3; // Enable TCON0 clk, divide by 4
 }
 
-uint8_t hdmi_readb(uint32_t reg)
-{
-    return *(uint8_t *)(HDMI_BASE + reg);
-}
-
-void hdmi_writeb(uint8_t val, uint32_t reg)
-{
-    *(uint8_t *)(HDMI_BASE + reg) = val;
-}
-
-void reg_phy_write(uint32_t reg, uint32_t val)
-{
-    *(uint32_t *)(HDMI_PHY_BASE + reg) = val;
-}
-
-void reg_phy_read(uint32_t reg, uint32_t *val)
-{
-    *val =  *(uint32_t *)(HDMI_PHY_BASE + reg);
-}
-
-void reg_phy_update_bits(uint32_t reg, uint32_t mask, uint32_t val) 
-{ 
-    uint32_t tmp, orig;
- 
-    reg_phy_read(reg, &orig);
- 
-    tmp = orig & ~mask;
-    tmp |= val & mask;
- 
-    if (tmp != orig)
-        reg_phy_write(reg, tmp);
-}
-
-#define reg_phy_read_poll_timeout(reg, val, cond, sleep_us, timeout_us) \
-({ \
-    uint32_t slept = 0; \
-    for (;;) { \
-        reg_phy_read(reg, &val); \
-        if (cond) \
-            break; \
-        udelay(sleep_us); \
-        slept += sleep_us; \
-        if (timeout_us && slept > timeout_us) \
-            break; \
-    } \
-})
-
 void hdmi_init() {
 
     uint32_t val;
     uint8_t bval;
     uint32_t phy_rcal;
     int ret;
+    uint8_t phy_mask;
 
-    // START drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c sun8i_dw_hdmi_bind...
+    // The following is taken from the component sunxi driver. See docs/STACKTRACE.txt for the full horrible story.
+    // Everything starts from sun8i_dw_hdmi_probe which due to the component nature causes:
+    // sun4i_drv_bind()
+    // sun4i_tcon_bind
+    // sun8i_dw_hdmi_bind()
+    // etc.
+    // It's very confusing, and I'd like to understand it better.
 
-        // TODO
-        SUN50I_H616_HDMI_BGR_REG |= (1<<16); // De-assert reset of RST_BUS_HDMI
-        SUN50I_H616_HDMI0_CLK_REG |= (1 << 31); // Enable clock CLK_HDMI (is this done right with rest of bitfield?)
+    // TODO: Anything before this?
 
+                            SUN6I_LOSC_CTRL = 0x16aa0000;
+
+    // START drivers/clk/sunxi-ng/ccu-sun8i-de2.c sunxi_de2_clk_probe()
+        SUN50I_H616_DE_BGR_REG |= (1 << 0);  // Enable CLK_BUS_DE
+        SUN50I_H616_PLL_DE_REG |= (1 << 31); // Enable pll-de (parent of next)
+        SUN50I_H616_DE_CLK_REG |= (1 << 31); // Enable CLK_DE
+        SUN50I_H616_DE_BGR_REG |= (1 << 16); // De-assert RST_BUS_DE
+        DE_RANDOM_1_REG = DE_RANDOM_1_VAL;
+        DE_RANDOM_2_REG = DE_RANDOM_2_VAL;
+    // END drivers/clk/sunxi-ng/ccu-sun8i-de2.c sunxi_de2_clk_probe()
+
+    // START HDMI drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c sun8i_dw_hdmi_bind()
+        SUN50I_H616_HDMI_BGR_REG |= (1<<16); // De-assert reset of RST_BUS_HDMI aka rst_ctrl
+        SUN50I_H616_PLL_VIDEO0_REG |= (1 << 31); // Enable parent PLL pll-video0
+        SUN50I_H616_HDMI0_CLK_REG |= (1 << 31); // Enable clock CLK_HDMI aka clk_tmds
         // START PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun8i_hdmi_phy_init()
-
-            // ret = reset_control_deassert(phy->rst_phy);
-            // if (ret) {
-            //     dev_err(phy->dev, "Cannot deassert phy reset control: %d\n", ret);
-            //     return ret;
-            // }
-            SUN50I_H616_HDMI_BGR_REG |= (1<<17); // De-assert reset of RST_BUS_HDMI_SUB
-
-            // ret = clk_prepare_enable(phy->clk_bus);
-            // if (ret) {
-            //     dev_err(phy->dev, "Cannot enable bus clock: %d\n", ret);
-            //     goto err_assert_rst_phy;
-            // }
-
-            // ret = clk_prepare_enable(phy->clk_mod);
-            // if (ret) {
-            //     dev_err(phy->dev, "Cannot enable mod clock: %d\n", ret);
-            //     goto err_disable_clk_bus;
-            // }
-
-            // if (phy->variant->has_phy_clk) {
-            //     ret = sun8i_phy_clk_create(phy, phy->dev,
-            //                 phy->variant->has_second_pll);
-            //     if (ret) {
-            //         dev_err(phy->dev, "Couldn't create the PHY clock\n");
-            //         goto err_disable_clk_mod;
-            //     }
-
-            //     clk_prepare_enable(phy->clk_phy);
-            // }
-
-            // phy->variant->phy_init(phy);
-
-
-
+            SUN50I_H616_HDMI_BGR_REG |= (1 << 17); // De-assert reset of RST_BUS_HDMI_SUB
+            SUN50I_H616_HDMI_BGR_REG |= (1 << 0); // Enable clock CLK_BUS_HDMI
+            SUN50I_H616_HDMI0_SLOW_CLK_REG |= (1 << 31); // CLK_HDMI_SLOW
+            // START PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun50i_hdmi_phy_init_h6()
+                reg_phy_update_bits(SUN8I_HDMI_PHY_REXT_CTRL_REG,
+                        SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN,
+                        SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN);
+                reg_phy_update_bits(SUN8I_HDMI_PHY_REXT_CTRL_REG,
+                        0xffff0000, 0x80c00000);
+            // END PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun50i_hdmi_phy_init_h6()
         // END PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun8i_hdmi_phy_init()
-    
-    // END drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c sun8i_dw_hdmi_bind...
+        // START HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_bind()
+            // START HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_probe()
+                phy_mask = (uint8_t) ~(HDMI_PHY_HPD | HDMI_PHY_RX_SENSE);
+                SUN50I_H616_HDMI_CEC_CLK_REG |= (1 << 31) | (1 << 30); // Enable CLK_HDMI_CEC aka cec
+                // Get DesignWare version
+                uint16_t version = hdmi_readb(HDMI_DESIGN_ID) << 8 | hdmi_readb(HDMI_REVISION_ID);
+                uint8_t id0 = hdmi_readb(HDMI_PRODUCT_ID0); // HDMI_PRODUCT_ID0_HDMI_TX
+                uint8_t id1 = hdmi_readb(HDMI_PRODUCT_ID1); // BIT(0) must be set
+                // START dw_hdmi_detect_phy()
+                    uint8_t config_id2 = hdmi_readb(HDMI_CONFIG2_ID); // DW_HDMI_PHY_DWC_HDMI20_TX_PHY
+                    printf("HDMI_CONFIG2_ID: %x\n", config_id2);
+                // END dw_hdmi_detect_phy()
+                printf("HDMI Version: %x ID: %x %x\n", version, id0, id1);
+                // START dw_hdmi_init_hw()
+                    // START initialize_hdmi_ih_mutes()
+                        uint8_t ih_mute;
+                        /*
+                        * Boot up defaults are:
+                        * HDMI_IH_MUTE   = 0x03 (disabled)
+                        * HDMI_IH_MUTE_* = 0x00 (enabled)
+                        *
+                        * Disable top level interrupt bits in HDMI block
+                        */
+                        ih_mute = hdmi_readb(HDMI_IH_MUTE) |
+                            HDMI_IH_MUTE_MUTE_WAKEUP_INTERRUPT |
+                            HDMI_IH_MUTE_MUTE_ALL_INTERRUPT;
 
-    // START PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun50i_hdmi_phy_init_h6()
+                        hdmi_writeb(ih_mute, HDMI_IH_MUTE);
 
-        reg_phy_update_bits(SUN8I_HDMI_PHY_REXT_CTRL_REG,
-                SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN,
-                SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN);
+                        /* by default mask all interrupts */
+                        hdmi_writeb(0xff, HDMI_VP_MASK);
+                        hdmi_writeb(0xff, HDMI_FC_MASK0);
+                        hdmi_writeb(0xff, HDMI_FC_MASK1);
+                        hdmi_writeb(0xff, HDMI_FC_MASK2);
+                        hdmi_writeb(0xff, HDMI_PHY_MASK0);
+                        hdmi_writeb(0xff, HDMI_PHY_I2CM_INT_ADDR);
+                        hdmi_writeb(0xff, HDMI_PHY_I2CM_CTLINT_ADDR);
+                        hdmi_writeb(0xff, HDMI_AUD_INT);
+                        hdmi_writeb(0xff, HDMI_AUD_SPDIFINT);
+                        hdmi_writeb(0xff, HDMI_AUD_HBR_MASK);
+                        hdmi_writeb(0xff, HDMI_GP_MASK);
+                        hdmi_writeb(0xff, HDMI_A_APIINTMSK);
+                        hdmi_writeb(0xff, HDMI_I2CM_INT);
+                        hdmi_writeb(0xff, HDMI_I2CM_CTLINT);
 
-        reg_phy_update_bits(SUN8I_HDMI_PHY_REXT_CTRL_REG,
-                0xffff0000, 0x80c00000);
+                        /* Disable interrupts in the IH_MUTE_* registers */
+                        hdmi_writeb(0xff, HDMI_IH_MUTE_FC_STAT0);
+                        hdmi_writeb(0xff, HDMI_IH_MUTE_FC_STAT1);
+                        hdmi_writeb(0xff, HDMI_IH_MUTE_FC_STAT2);
+                        hdmi_writeb(0xff, HDMI_IH_MUTE_AS_STAT0);
+                        hdmi_writeb(0xff, HDMI_IH_MUTE_PHY_STAT0);
+                        hdmi_writeb(0xff, HDMI_IH_MUTE_I2CM_STAT0);
+                        hdmi_writeb(0xff, HDMI_IH_MUTE_CEC_STAT0);
+                        hdmi_writeb(0xff, HDMI_IH_MUTE_VP_STAT0);
+                        hdmi_writeb(0xff, HDMI_IH_MUTE_I2CMPHY_STAT0);
+                        hdmi_writeb(0xff, HDMI_IH_MUTE_AHBDMAAUD_STAT0);
 
-    // END PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun50i_hdmi_phy_init_h6()
+                        /* Enable top level interrupt bits in HDMI block */
+                        ih_mute &= ~(HDMI_IH_MUTE_MUTE_WAKEUP_INTERRUPT |
+                                HDMI_IH_MUTE_MUTE_ALL_INTERRUPT);
+                        hdmi_writeb(ih_mute, HDMI_IH_MUTE);
+                    // END initialize_hdmi_ih_mutes()
+                    // START dw_hdmi_i2c_init()
+                        hdmi_writeb(HDMI_PHY_I2CM_INT_ADDR_DONE_POL,
+                                HDMI_PHY_I2CM_INT_ADDR);
 
-    // START HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_probe()
+                        hdmi_writeb(HDMI_PHY_I2CM_CTLINT_ADDR_NAC_POL |
+                                HDMI_PHY_I2CM_CTLINT_ADDR_ARBITRATION_POL,
+                                HDMI_PHY_I2CM_CTLINT_ADDR);
 
-        // Get DesignWare version
-        uint16_t version = hdmi_readb(HDMI_DESIGN_ID) << 8 | hdmi_readb(HDMI_REVISION_ID);
-        uint8_t id0 = hdmi_readb(HDMI_PRODUCT_ID0); // HDMI_PRODUCT_ID0_HDMI_TX
-        uint8_t id1 = hdmi_readb(HDMI_PRODUCT_ID1); // BIT(0) must be set
-        printf("HDMI Version: %x ID: %x %x\n", version, id0, id1);
+                        /* Software reset */
+                        hdmi_writeb(0x00, HDMI_I2CM_SOFTRSTZ);
 
-        uint8_t config_id2 = hdmi_readb(HDMI_CONFIG2_ID); // DW_HDMI_PHY_DWC_HDMI20_TX_PHY
-        printf("HDMI_CONFIG2_ID: %x\n", config_id2);
+                        /* Set Standard Mode speed (determined to be 100KHz on iMX6) */
+                        hdmi_writeb(0x00, HDMI_I2CM_DIV);
 
-        // .type = DW_HDMI_PHY_DWC_HDMI20_TX_PHY,
-        // .name = "DWC HDMI 2.0 TX PHY",
-        // .gen = 2,
-        // .has_svsret = true,
-        // .configure = hdmi_phy_configure_dwc_hdmi_3d_tx,
+                        /* Set done, not acknowledged and arbitration interrupt polarities */
+                        hdmi_writeb(HDMI_I2CM_INT_DONE_POL, HDMI_I2CM_INT);
+                        hdmi_writeb(HDMI_I2CM_CTLINT_NAC_POL | HDMI_I2CM_CTLINT_ARB_POL,
+                                HDMI_I2CM_CTLINT);
 
-    // START initialize_hdmi_ih_mutes()
+                        /* Clear DONE and ERROR interrupts */
+                        hdmi_writeb(HDMI_IH_I2CM_STAT0_ERROR | HDMI_IH_I2CM_STAT0_DONE,
+                                HDMI_IH_I2CM_STAT0);
 
-        uint8_t ih_mute;
-
-        /*
-        * Boot up defaults are:
-        * HDMI_IH_MUTE   = 0x03 (disabled)
-        * HDMI_IH_MUTE_* = 0x00 (enabled)
-        *
-        * Disable top level interrupt bits in HDMI block
-        */
-        ih_mute = hdmi_readb(HDMI_IH_MUTE) |
-            HDMI_IH_MUTE_MUTE_WAKEUP_INTERRUPT |
-            HDMI_IH_MUTE_MUTE_ALL_INTERRUPT;
-
-        hdmi_writeb(ih_mute, HDMI_IH_MUTE);
-
-        /* by default mask all interrupts */
-        hdmi_writeb(0xff, HDMI_VP_MASK);
-        hdmi_writeb(0xff, HDMI_FC_MASK0);
-        hdmi_writeb(0xff, HDMI_FC_MASK1);
-        hdmi_writeb(0xff, HDMI_FC_MASK2);
-        hdmi_writeb(0xff, HDMI_PHY_MASK0);
-        hdmi_writeb(0xff, HDMI_PHY_I2CM_INT_ADDR);
-        hdmi_writeb(0xff, HDMI_PHY_I2CM_CTLINT_ADDR);
-        hdmi_writeb(0xff, HDMI_AUD_INT);
-        hdmi_writeb(0xff, HDMI_AUD_SPDIFINT);
-        hdmi_writeb(0xff, HDMI_AUD_HBR_MASK);
-        hdmi_writeb(0xff, HDMI_GP_MASK);
-        hdmi_writeb(0xff, HDMI_A_APIINTMSK);
-        hdmi_writeb(0xff, HDMI_I2CM_INT);
-        hdmi_writeb(0xff, HDMI_I2CM_CTLINT);
-
-        /* Disable interrupts in the IH_MUTE_* registers */
-        hdmi_writeb(0xff, HDMI_IH_MUTE_FC_STAT0);
-        hdmi_writeb(0xff, HDMI_IH_MUTE_FC_STAT1);
-        hdmi_writeb(0xff, HDMI_IH_MUTE_FC_STAT2);
-        hdmi_writeb(0xff, HDMI_IH_MUTE_AS_STAT0);
-        hdmi_writeb(0xff, HDMI_IH_MUTE_PHY_STAT0);
-        hdmi_writeb(0xff, HDMI_IH_MUTE_I2CM_STAT0);
-        hdmi_writeb(0xff, HDMI_IH_MUTE_CEC_STAT0);
-        hdmi_writeb(0xff, HDMI_IH_MUTE_VP_STAT0);
-        hdmi_writeb(0xff, HDMI_IH_MUTE_I2CMPHY_STAT0);
-        hdmi_writeb(0xff, HDMI_IH_MUTE_AHBDMAAUD_STAT0);
-
-        /* Enable top level interrupt bits in HDMI block */
-        ih_mute &= ~(HDMI_IH_MUTE_MUTE_WAKEUP_INTERRUPT |
-                HDMI_IH_MUTE_MUTE_ALL_INTERRUPT);
-        hdmi_writeb(ih_mute, HDMI_IH_MUTE);
-        
-    // dw_hdmi_i2c_init()
-
-        hdmi_writeb(HDMI_PHY_I2CM_INT_ADDR_DONE_POL,
-                HDMI_PHY_I2CM_INT_ADDR);
-
-        hdmi_writeb(HDMI_PHY_I2CM_CTLINT_ADDR_NAC_POL |
-                HDMI_PHY_I2CM_CTLINT_ADDR_ARBITRATION_POL,
-                HDMI_PHY_I2CM_CTLINT_ADDR);
-
-        /* Software reset */
-        hdmi_writeb(0x00, HDMI_I2CM_SOFTRSTZ);
-
-        /* Set Standard Mode speed (determined to be 100KHz on iMX6) */
-        hdmi_writeb(0x00, HDMI_I2CM_DIV);
-
-        /* Set done, not acknowledged and arbitration interrupt polarities */
-        hdmi_writeb(HDMI_I2CM_INT_DONE_POL, HDMI_I2CM_INT);
-        hdmi_writeb(HDMI_I2CM_CTLINT_NAC_POL | HDMI_I2CM_CTLINT_ARB_POL,
-                HDMI_I2CM_CTLINT);
-
-        /* Clear DONE and ERROR interrupts */
-        hdmi_writeb(HDMI_IH_I2CM_STAT0_ERROR | HDMI_IH_I2CM_STAT0_DONE,
-                HDMI_IH_I2CM_STAT0);
-
-        /* Mute DONE and ERROR interrupts */
-        hdmi_writeb(HDMI_IH_I2CM_STAT0_ERROR | HDMI_IH_I2CM_STAT0_DONE,
-                HDMI_IH_MUTE_I2CM_STAT0);
-
-
-    // Skipping IRQ setup
-
-    // TODO We're back in dw_hdmi_probe() after dw_hdmi_init_hw()
-
-    // END HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_probe()
+                        /* Mute DONE and ERROR interrupts */
+                        hdmi_writeb(HDMI_IH_I2CM_STAT0_ERROR | HDMI_IH_I2CM_STAT0_DONE,
+                                HDMI_IH_MUTE_I2CM_STAT0);
+                    // END dw_hdmi_i2c_init()
+                    // START dw_hdmi_phy_setup_hpd()
+                        /*
+                        * Configure the PHY RX SENSE and HPD interrupts polarities and clear
+                        * any pending interrupt.
+                        */
+                        hdmi_writeb(HDMI_PHY_HPD | HDMI_PHY_RX_SENSE, HDMI_PHY_POL0);
+                        hdmi_writeb(HDMI_IH_PHY_STAT0_HPD | HDMI_IH_PHY_STAT0_RX_SENSE,
+                                HDMI_IH_PHY_STAT0);
+                        /* Enable cable hot plug irq. */
+                        hdmi_writeb(phy_mask, HDMI_PHY_MASK0);
+                        /* Clear and unmute interrupts. */
+                        hdmi_writeb(HDMI_IH_PHY_STAT0_HPD | HDMI_IH_PHY_STAT0_RX_SENSE,
+                                HDMI_IH_PHY_STAT0);
+                        hdmi_writeb(~(HDMI_IH_PHY_STAT0_HPD | HDMI_IH_PHY_STAT0_RX_SENSE),
+                                HDMI_IH_MUTE_PHY_STAT0);
+                    // END dw_hdmi_phy_setup_hpd()
+                // END dw_hdmi_init_hw()
+                // We're back in dw_hdmi_probe()!
+                // TODO Skipping IRQ setup
+                // SKIP hdmi_init_clk_regenerator() - It called hdmi_set_clk_regenerator() and hdmi_set_cts_n() but had no effect in my testing. It's just audio stuff?
+            // END HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_probe()
+        // END HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_bind()
+    // END HDMI drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c sun8i_dw_hdmi_bind()
 
 
-    //                     // Read edid
-                        char edid[128] = {0};
-                        char pos;
-                        for (pos = 0; pos < sizeof(edid); pos++)
-                        {
-                            hdmi_writeb(0x50, HDMI_I2CM_SLAVE);
-                            hdmi_writeb(pos, HDMI_I2CM_ADDRESS);
-                            hdmi_writeb(HDMI_I2CM_OPERATION_READ, HDMI_I2CM_OPERATION);
-                            udelay(10000);
-                            edid[pos] = hdmi_readb(HDMI_I2CM_DATAI);
-                        }
+    // BEGIN dw_hdmi_i2c_xfer() aka Read the EDID!
+    /* This little widget gets called when sun4i_drv_bind is
+        called and the whole Linux DRM framebuffer thing runs.
+        It's currently not working, probably due to clock stuff
+        I've not set up yet.
+    */
+    char edid[128] = {0};
+    char pos;
+    // HDMI_IH_MUTE_I2CM_STAT0 = 0
+    for (pos = 0; pos < sizeof(edid); pos++)
+    {
+        hdmi_writeb(0x50, HDMI_I2CM_SLAVE);
+        hdmi_writeb(pos, HDMI_I2CM_ADDRESS);
+        hdmi_writeb(HDMI_I2CM_OPERATION_READ, HDMI_I2CM_OPERATION);
+        //HDMI_IH_I2CM_STAT0 = 0x2 would acknowledge the IRQ if we had it.
+        udelay(100);
+        edid[pos] = hdmi_readb(HDMI_I2CM_DATAI);
+    }
+    // HDMI_IH_MUTE_I2CM_STAT0 = 3
 
-                        for (pos = 0; pos < sizeof(edid); pos++)
-                        {
-                            if (pos && !(pos % 16))
-                                printf("\n");
-                            printf("%02x", edid[pos]);
-                        }
-                        printf("\n");
+    for (pos = 0; pos < sizeof(edid); pos++)
+    {
+        if (pos && !(pos % 16))
+            printf("\n");
+        printf("%02x", edid[pos]);
+    }
+    printf("\n");
+    // END dw_hdmi_i2c_xfer() aka Read the EDID!
     
 
     // // START PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun8i_h3_hdmi_phy_config()

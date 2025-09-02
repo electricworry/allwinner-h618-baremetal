@@ -4,8 +4,18 @@
 #define GENMASK(h, l)   (((~((unsigned int)0)) << (l)) & (~(0) >> (32 - 1 - (h))))
 
 // The HDMI registers base address.
+#define DE_BASE               0x1000000 // allwinner,sun50i-a64-de2 + allwinner,sun50i-h616-de33-clk
 #define HDMI_BASE             0x6000000 // allwinner,sun50i-h6-dw-hdmi
 #define HDMI_PHY_BASE         0x6010000 // allwinner,sun50i-h616-hdmi-phy
+#define DISP_IF_TOP           0x6510000 // allwinner,sun50i-h6-tcon-top
+#define TCON_TV0_BASE         0x6515000 // allwinner,sun8i-r40-tcon-tv
+
+// From drivers/clk/sunxi-ng/ccu-sun8i-de2.c
+
+#define DE_RANDOM_1_REG       *(volatile uint32_t *)(DE_BASE + 0x8024)
+#define DE_RANDOM_1_VAL       0x0
+#define DE_RANDOM_2_REG       *(volatile uint32_t *)(DE_BASE + 0x8028)
+#define DE_RANDOM_2_VAL       0x0000a980
 
 // From drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
 

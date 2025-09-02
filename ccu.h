@@ -1,3 +1,10 @@
+
+
+#define RTC_BASE 0x07000000
+#define SUN6I_LOSC_CTRL           *(volatile uint32_t *)(RTC_BASE + 0x0000)
+
+
+
 // The CCU registers base address.
 #define CCU_BASE 0x03001000
 
@@ -22,6 +29,8 @@
 #define SUN50I_H616_HDMI0_SLOW_CLK_REG     *(volatile uint32_t *)(CCU_BASE + 0x0b04)
 #define SUN50I_H616_HDMI_CEC_CLK_REG       *(volatile uint32_t *)(CCU_BASE + 0x0B10)
 #define SUN50I_H616_HDMI_BGR_REG           *(volatile uint32_t *)(CCU_BASE + 0x0b1c)
+#define SUN50I_H616_DE_BGR_REG             *(volatile uint32_t *)(CCU_BASE + 0x060c)
+#define SUN50I_H616_DE_CLK_REG             *(volatile uint32_t *)(CCU_BASE + 0x0600)
 
 
 // Structure of CCU registers.
