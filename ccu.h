@@ -1,36 +1,51 @@
-
-
+////////////////
+// RTC Registers
+////////////////
 #define RTC_BASE 0x07000000
-#define SUN6I_LOSC_CTRL           *(volatile uint32_t *)(RTC_BASE + 0x0000)
+#define SUN6I_LOSC_CTRL                     *(volatile uint32_t *)(RTC_BASE + 0x0000)
+#define SUN6I_DCXO_CTRL_REG                 *(volatile uint32_t *)(RTC_BASE + 0x0160)
+
+//////////////////
+// R_CCU Registers
+//////////////////
+#define R_CCU_BASE 0x07010000
+#define SUN50I_H616_CLK_R_APB1_TWD_REG      *(volatile uint32_t *)(R_CCU_BASE + 0x012c)
+#define SUN50I_H616_CLK_R_APB1_RTC_REG      *(volatile uint32_t *)(R_CCU_BASE + 0x020c)
 
 
-
-// The CCU registers base address.
+/////////////////
+// CCU Registers
+/////////////////
 #define CCU_BASE 0x03001000
-
-#define SUN50I_H616_PLL_CPUX_REG           *(volatile uint32_t *)(CCU_BASE + 0x0000)
-#define SUN50I_H616_PLL_DDR0_REG           *(volatile uint32_t *)(CCU_BASE + 0x0010)
-#define SUN50I_H616_PLL_DDR1_REG           *(volatile uint32_t *)(CCU_BASE + 0x0018)
-#define SUN50I_H616_PLL_PERIPH0_REG        *(volatile uint32_t *)(CCU_BASE + 0x0020)
-#define SUN50I_H616_PLL_PERIPH1_REG        *(volatile uint32_t *)(CCU_BASE + 0x0028)
-#define SUN50I_H616_PLL_GPU_REG            *(volatile uint32_t *)(CCU_BASE + 0x0030)
-#define SUN50I_H616_PLL_VIDEO0_REG         *(volatile uint32_t *)(CCU_BASE + 0x0040)
-#define SUN50I_H616_PLL_VIDEO1_REG         *(volatile uint32_t *)(CCU_BASE + 0x0048)
-#define SUN50I_H616_PLL_VIDEO2_REG         *(volatile uint32_t *)(CCU_BASE + 0x0050)
-#define SUN50I_H616_PLL_VE_REG             *(volatile uint32_t *)(CCU_BASE + 0x0058)
-#define SUN50I_H616_PLL_DE_REG             *(volatile uint32_t *)(CCU_BASE + 0x0060)
-#define SUN50I_H616_PLL_AUDIO_REG          *(volatile uint32_t *)(CCU_BASE + 0x0078)
-#define SUN50I_H616_USB0_CLK_REG           *(volatile uint32_t *)(CCU_BASE + 0x0a70)
-#define SUN50I_H616_USB1_CLK_REG           *(volatile uint32_t *)(CCU_BASE + 0x0a74)
-#define SUN50I_H616_USB2_CLK_REG           *(volatile uint32_t *)(CCU_BASE + 0x0a78)
-#define SUN50I_H616_USB3_CLK_REG           *(volatile uint32_t *)(CCU_BASE + 0x0a7c)
-#define SUN50I_H616_GPU_CLK1_REG           *(volatile uint32_t *)(CCU_BASE + 0x0674)
-#define SUN50I_H616_HDMI0_CLK_REG          *(volatile uint32_t *)(CCU_BASE + 0x0b00)
-#define SUN50I_H616_HDMI0_SLOW_CLK_REG     *(volatile uint32_t *)(CCU_BASE + 0x0b04)
-#define SUN50I_H616_HDMI_CEC_CLK_REG       *(volatile uint32_t *)(CCU_BASE + 0x0B10)
-#define SUN50I_H616_HDMI_BGR_REG           *(volatile uint32_t *)(CCU_BASE + 0x0b1c)
-#define SUN50I_H616_DE_BGR_REG             *(volatile uint32_t *)(CCU_BASE + 0x060c)
-#define SUN50I_H616_DE_CLK_REG             *(volatile uint32_t *)(CCU_BASE + 0x0600)
+#define SUN50I_H616_PLL_CPUX_REG            *(volatile uint32_t *)(CCU_BASE + 0x0000)
+#define SUN50I_H616_PLL_DDR0_REG            *(volatile uint32_t *)(CCU_BASE + 0x0010)
+#define SUN50I_H616_PLL_DDR1_REG            *(volatile uint32_t *)(CCU_BASE + 0x0018)
+#define SUN50I_H616_PLL_PERIPH0_REG         *(volatile uint32_t *)(CCU_BASE + 0x0020)
+#define SUN50I_H616_PLL_PERIPH1_REG         *(volatile uint32_t *)(CCU_BASE + 0x0028)
+#define SUN50I_H616_PLL_GPU_REG             *(volatile uint32_t *)(CCU_BASE + 0x0030)
+#define SUN50I_H616_PLL_VIDEO0_REG          *(volatile uint32_t *)(CCU_BASE + 0x0040)
+#define SUN50I_H616_PLL_VIDEO1_REG          *(volatile uint32_t *)(CCU_BASE + 0x0048)
+#define SUN50I_H616_PLL_VIDEO2_REG          *(volatile uint32_t *)(CCU_BASE + 0x0050)
+#define SUN50I_H616_PLL_VE_REG              *(volatile uint32_t *)(CCU_BASE + 0x0058)
+#define SUN50I_H616_PLL_DE_REG              *(volatile uint32_t *)(CCU_BASE + 0x0060)
+#define SUN50I_H616_PLL_AUDIO_REG           *(volatile uint32_t *)(CCU_BASE + 0x0078)
+#define SUN50I_H616_DE_CLK_REG              *(volatile uint32_t *)(CCU_BASE + 0x0600)
+#define SUN50I_H616_DE_BGR_REG              *(volatile uint32_t *)(CCU_BASE + 0x060c)
+#define SUN50I_H616_GPU_CLK1_REG            *(volatile uint32_t *)(CCU_BASE + 0x0674)
+#define SUN50I_H616_DMA_BGR_REG             *(volatile uint32_t *)(CCU_BASE + 0x070c)
+#define SUN50I_H616_MBUS_MAT_CLK_GATING_REG *(volatile uint32_t *)(CCU_BASE + 0x0804)
+#define SUN50I_H616_DRAM_BGR_REG            *(volatile uint32_t *)(CCU_BASE + 0x080c)
+#define SUN50I_H616_USB0_CLK_REG            *(volatile uint32_t *)(CCU_BASE + 0x0a70)
+#define SUN50I_H616_USB1_CLK_REG            *(volatile uint32_t *)(CCU_BASE + 0x0a74)
+#define SUN50I_H616_USB2_CLK_REG            *(volatile uint32_t *)(CCU_BASE + 0x0a78)
+#define SUN50I_H616_USB3_CLK_REG            *(volatile uint32_t *)(CCU_BASE + 0x0a7c)
+#define SUN50I_H616_HDMI0_CLK_REG           *(volatile uint32_t *)(CCU_BASE + 0x0b00)
+#define SUN50I_H616_HDMI0_SLOW_CLK_REG      *(volatile uint32_t *)(CCU_BASE + 0x0b04)
+#define SUN50I_H616_HDMI_CEC_CLK_REG        *(volatile uint32_t *)(CCU_BASE + 0x0b10)
+#define SUN50I_H616_HDMI_BGR_REG            *(volatile uint32_t *)(CCU_BASE + 0x0b1c)
+#define SUN50I_H616_DISPLAY_IF_TOP_BGR_REG  *(volatile uint32_t *)(CCU_BASE + 0x0b5C)
+#define SUN50I_H616_TVE0_CLK_REG            *(volatile uint32_t *)(CCU_BASE + 0x0b80)
+#define SUN50I_H616_TCON_TV_BGR_REG         *(volatile uint32_t *)(CCU_BASE + 0x0b9c)
 
 
 // Structure of CCU registers.

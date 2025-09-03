@@ -10,6 +10,23 @@
 #define DISP_IF_TOP           0x6510000 // allwinner,sun50i-h6-tcon-top
 #define TCON_TV0_BASE         0x6515000 // allwinner,sun8i-r40-tcon-tv
 
+// From TCON_TOP
+
+#define TCON_TOP_CLK_NUM					3
+#define TCON_TOP_BASE         0x6510000 // allwinner,sun50i-h6-tcon-top
+#define TCON_TOP_PORT_SEL_REG       *(volatile uint32_t *)(TCON_TOP_BASE + 0x1C)
+#define TCON_TOP_GATE_SRC_REG       *(volatile uint32_t *)(TCON_TOP_BASE + 0x20)
+
+// From TCON_TV
+
+#define SUN4I_TCON_BASE         0x06515000 // allwinner,sun8i-r40-tcon-tv
+#define SUN4I_TCON_GCTL_REG       *(volatile uint32_t *)(SUN4I_TCON_BASE + 0x00)
+#define SUN4I_TCON_GINT0_REG       *(volatile uint32_t *)(SUN4I_TCON_BASE + 0x04)
+#define SUN4I_TCON_GINT1_REG       *(volatile uint32_t *)(SUN4I_TCON_BASE + 0x08)
+#define SUN4I_TCON0_IO_TRI_REG       *(volatile uint32_t *)(SUN4I_TCON_BASE + 0x8c)
+#define SUN4I_TCON1_IO_TRI_REG       *(volatile uint32_t *)(SUN4I_TCON_BASE + 0xf4)
+
+
 // From drivers/clk/sunxi-ng/ccu-sun8i-de2.c
 
 #define DE_RANDOM_1_REG       *(volatile uint32_t *)(DE_BASE + 0x8024)
