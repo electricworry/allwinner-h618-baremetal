@@ -96,10 +96,14 @@ start64:
   
   // Which core am I
   // ----------------
+  // IMPORTANT: If running this through QEMU, need to skip next three instructions
+  // and jump to skippy.
+  // Also, need to move FEL reset64 address.
   MRS      x0, MPIDR_EL1
   AND      x0, x0, #0xFF                     // Mask off to leave Aff0
   CBZ      x0, primary                       // If core 0, run the primary init
   B        secondary                         // Else, run secondary init
+  //B skippy
 
 // ------------------------------------------------------------
 // Primary core
@@ -264,6 +268,7 @@ primary:
   // _interrupt_vector_h:                .word   interrupt
   // _fast_interrupt_vector_h:           .word   _reset
 
+skippy:
   // Set the SP to where our stack should live
   LDR x4, =0x60000000     // TODO: Can this come from linker script?
   mov sp, x4
