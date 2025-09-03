@@ -88,6 +88,13 @@ void display_clocks_init()
        drivers/clk/sunxi-ng/ccu-sun50i-h616.c in combination with the device-tree.
     */
 
+    // Enable the iosc
+    // SUN6I_DCXO_CTRL_REG |= (1 << 0);
+
+    // START r_ccu aka prmc
+        // SUN50I_H616_CLK_R_APB1_TWD_REG |= (1 << 0); // This clock is marked as critical
+    // END r_ccu prmc
+
     // START drivers/clk/sunxi-ng/ccu-sun50i-h616.c sun50i_h616_ccu_probe()
 
         /* Enable the lock bits and the output enable bits on all PLLs */
@@ -153,7 +160,21 @@ void display_clocks_init()
 
     // END drivers/clk/sunxi-ng/ccu-sun50i-h616.c sun50i_h616_ccu_probe()
 
-    // TODO: Enable all of the other things we need.
+    // TODO: Various guff I was playing with.
+    // // START rtc
+    //     // The rtc needs the following r_ccu clock, so we enable it. 
+    //     // SUN50I_H616_CLK_R_APB1_RTC_REG |= (1 << 0); 
+    //     // The rtc could also ask for <&ccu CLK_PLL_SYSTEM_32K> enabled which isn't a real clock, but its parent is SUN50I_H616_PLL_PERIPH0_REG so we enable it?
+    //     SUN50I_H616_PLL_PERIPH0_REG |= (1 << 31);
+    // // END rtc - that should satisfy rtc unless something else needs it.
+    // SUN50I_H616_GPU_CLK1_REG |= (1 << 31);
+    // SUN50I_H616_PLL_DDR0_REG |= (1 << 31);
+    // SUN50I_H616_DRAM_BGR_REG |= (1 << 0);
+    // SUN50I_H616_DMA_BGR_REG |= (1 << 16);
+    // SUN50I_H616_DMA_BGR_REG |= (1 << 0);
+    // SUN50I_H616_MBUS_MAT_CLK_GATING_REG |= (1 << 0);
+    //     // The rtc needs the following r_ccu clock, so we enable it. 
+    //     SUN50I_H616_CLK_R_APB1_RTC_REG |= (1 << 0); 
     // SUN50I_H616_HDMI_BGR_REG |= (1<<0); // Enable CLK_BUS_HDMI
     // SUN50I_H616_HDMI_BGR_REG |= (1<<16) | (1<<17); // De-assert reset of RST_BUS_HDMI and RST_BUS_HDMI_SUB
     // SUN50I_H616_HDMI0_SLOW_CLK_REG    = (1<<31); // Enable HDMI slow clk
@@ -195,8 +216,6 @@ void hdmi_init() {
 
     // TODO: Anything before this?
 
-                            SUN6I_LOSC_CTRL = 0x16aa0000;
-
     // START drivers/clk/sunxi-ng/ccu-sun8i-de2.c sunxi_de2_clk_probe()
         SUN50I_H616_DE_BGR_REG |= (1 << 0);  // Enable CLK_BUS_DE
         SUN50I_H616_PLL_DE_REG |= (1 << 31); // Enable pll-de (parent of next)
@@ -205,6 +224,48 @@ void hdmi_init() {
         DE_RANDOM_1_REG = DE_RANDOM_1_VAL;
         DE_RANDOM_2_REG = DE_RANDOM_2_VAL;
     // END drivers/clk/sunxi-ng/ccu-sun8i-de2.c sunxi_de2_clk_probe()
+
+    // START drivers/gpu/drm/sun4i/sun8i_tcon_top.c sun8i_tcon_top_bind()
+        SUN50I_H616_DISPLAY_IF_TOP_BGR_REG |= (1 << 16); // De-assert RST_BUS_TCON_TOP
+        SUN50I_H616_DISPLAY_IF_TOP_BGR_REG |= (1 << 0);// Enable CLK_BUS_TCON_TOP
+        /*
+        * At least on H6, some registers have some bits set by default
+        * which may cause issues. Clear them here.
+        */
+        TCON_TOP_PORT_SEL_REG = 0;
+        TCON_TOP_GATE_SRC_REG = 0;
+        /*
+        * TCON TOP has two muxes, which select parent clock for each TCON TV
+        * channel clock. Parent could be either TCON TV or TVE clock. For now
+        * we leave this fixed to TCON TV, since TVE driver for R40 is not yet
+        * implemented. Once it is, graph needs to be traversed to determine
+        * if TVE is active on each TCON TV. If it is, mux should be switched
+        * to TVE clock parent.
+        */
+        // i = 0;
+        SUN50I_H616_TVE0_CLK_REG |= (1 << 31); // Enable CLK_TCON_TV0
+    // END drivers/gpu/drm/sun4i/sun8i_tcon_top.c sun8i_tcon_top_bind()
+
+    // START drivers/gpu/drm/sun4i/sun4i_tcon.c sun4i_tcon_bind()
+        SUN50I_H616_TCON_TV_BGR_REG |= (1 << 16); // De-assert RST_BUS_TCON_TV0
+		// can_lvds = false;
+        // START sun4i_tcon_init_clocks()
+            SUN50I_H616_TCON_TV_BGR_REG |= (1 << 0); // Enable CLK_BUS_TCON_TV0
+            // We just get tcon-ch1, no enable yet
+        // END sun4i_tcon_init_clocks()
+        // START sun4i_tcon_init_regmap()
+            /* Make sure the TCON is disabled and all IRQs are off */
+            SUN4I_TCON_GCTL_REG = 0;
+            SUN4I_TCON_GINT0_REG = 0;
+            SUN4I_TCON_GINT1_REG = 0;
+            /* Disable IO lines and set them to tristate */
+            SUN4I_TCON0_IO_TRI_REG = ~0;
+            SUN4I_TCON1_IO_TRI_REG = ~0;
+        // START sun4i_tcon_init_regmap()
+        // TODO skip IRQ
+        // TODO scip crtc setup
+        SUN4I_TCON_GCTL_REG |= (1 << 1);
+    // END drivers/gpu/drm/sun4i/sun4i_tcon.c sun4i_tcon_bind()
 
     // START HDMI drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c sun8i_dw_hdmi_bind()
         SUN50I_H616_HDMI_BGR_REG |= (1<<16); // De-assert reset of RST_BUS_HDMI aka rst_ctrl
@@ -351,7 +412,7 @@ void hdmi_init() {
         hdmi_writeb(pos, HDMI_I2CM_ADDRESS);
         hdmi_writeb(HDMI_I2CM_OPERATION_READ, HDMI_I2CM_OPERATION);
         //HDMI_IH_I2CM_STAT0 = 0x2 would acknowledge the IRQ if we had it.
-        udelay(100);
+        udelay(1000); // This is too slow at 100.
         edid[pos] = hdmi_readb(HDMI_I2CM_DATAI);
     }
     // HDMI_IH_MUTE_I2CM_STAT0 = 3
@@ -536,14 +597,12 @@ void hdmi_init() {
 			   (uint32_t)~SUN8I_HDMI_PHY_PLL_CFG2_PREDIV_MSK,
 			   pll_cfg2_init);
 	udelay(10000);
-    printf("HERE1 \n");
 	reg_phy_write(SUN8I_HDMI_PHY_PLL_CFG3_REG,
 		     SUN8I_HDMI_PHY_PLL_CFG3_SOUT_DIV2);
 	reg_phy_update_bits(SUN8I_HDMI_PHY_PLL_CFG1_REG,
 			   SUN8I_HDMI_PHY_PLL_CFG1_PLLEN,
 			   SUN8I_HDMI_PHY_PLL_CFG1_PLLEN);
 	udelay(10000);
-    printf("HERE2 \n");
 
 	/* get B value */
 	reg_phy_read(SUN8I_HDMI_PHY_ANA_STS_REG, &val);
@@ -564,8 +623,6 @@ void hdmi_init() {
 	reg_phy_write(SUN8I_HDMI_PHY_ANA_CFG2_REG, ana_cfg2_init);
 	reg_phy_write(SUN8I_HDMI_PHY_ANA_CFG3_REG, ana_cfg3_init);
 
-    printf("HERE3 \n");
-    
     // END PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun8i_h3_hdmi_phy_config()
 
                         // //
