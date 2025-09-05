@@ -99,8 +99,8 @@ struct edid {
     uint16_t vertical_sync_pulse_px;
     uint16_t vertical_back_porch_px;
     uint16_t vertical_mm;
-    uint8_t  horizontal_border;
-    uint8_t  vertical_border;
+    uint8_t  horizontal_border_px; // A value here means that many px*2 (left/right)
+    uint8_t  vertical_border_px;   // A value here means that many px*2 (top/bottom)
     bool     is_interlaced;
     // uint8_t  sync_type;
     // bool     composite_with_serrations;

@@ -217,8 +217,8 @@ int parse_edid_structure(uint8_t *edid, struct edid *dst)
                 ((GENMASK(7, 4) & edid[offset + 14]) << 4));
             dst->vertical_mm = (edid[offset + 13] |
                 ((GENMASK(3, 0) & edid[offset + 14]) << 8));
-            dst->horizontal_border = edid[offset + 15];
-            dst->vertical_border = edid[offset + 16];
+            dst->horizontal_border_px = edid[offset + 15];
+            dst->vertical_border_px = edid[offset + 16];
             dst->is_interlaced = BIT(7) & edid[offset + 17];
 
             /* I think the rest of the preferred DTD can be ignored */
@@ -305,8 +305,8 @@ void print_edid(struct edid *e)
     printf("vertical_sync_pulse_px: %d\n", e->vertical_sync_pulse_px);
     printf("vertical_back_porch_px: %d\n", e->vertical_back_porch_px);
     printf("vertical_mm: %d\n", e->vertical_mm);
-    printf("horizontal_border: %d\n", e->horizontal_border);
-    printf("vertical_border: %d\n", e->vertical_border);
+    printf("horizontal_border_px: %d\n", e->horizontal_border_px);
+    printf("vertical_border_px: %d\n", e->vertical_border_px);
     printf("Interlaced: %d\n", e->is_interlaced);
     // printf("Hpol: %c Vpol: %c\n",
     //     e->h_sync_is_positive ? 'P' : 'N',
