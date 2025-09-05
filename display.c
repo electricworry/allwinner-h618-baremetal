@@ -6,6 +6,7 @@
 #include "ccu.h"
 #include "system.h"
 #include "display.h"
+#include "edid.h"
 
 volatile uint32_t* active_buffer;
 volatile uint32_t framebuffer1[512*512] __attribute__ ((section ("UNCACHED")));
@@ -416,6 +417,9 @@ void hdmi_init() {
         edid[pos] = hdmi_readb(HDMI_I2CM_DATAI);
     }
     // HDMI_IH_MUTE_I2CM_STAT0 = 3
+    struct edid e = {0};
+    parse_edid_structure(edid, &e);
+    print_edid(&e);
 
     for (pos = 0; pos < sizeof(edid); pos++)
     {

@@ -4,10 +4,12 @@ OBJCOPY=$(TOOLCHAIN)/aarch64-none-elf-objcopy
 # CFLAGS=-T linker.ld -mfpu=neon -mfloat-abi=hard -mcpu=cortex-a7 -fpic -ffreestanding -O3 -nostdlib -Wextra
 CFLAGS=-T linker.ld -mcpu=cortex-a53 -O0 -Wextra
 
+.PHONY: edid-test
+
 os.bin: os.elf
 	$(OBJCOPY) -O binary --remove-section .uncached os.elf os.bin
-os.elf: linker.ld boot.o main.o uart.o ports.o mmu.o system.o display.o interrupts.o spritelayers.o usb.o demo.o
-	$(CC) $(CFLAGS) -o os.elf boot.o main.o uart.o ports.o mmu.o system.o display.o interrupts.o spritelayers.o usb.o demo.o
+os.elf: linker.ld boot.o main.o uart.o ports.o mmu.o system.o display.o interrupts.o spritelayers.o usb.o demo.o edid.o
+	$(CC) $(CFLAGS) -o os.elf boot.o main.o uart.o ports.o mmu.o system.o display.o interrupts.o spritelayers.o usb.o demo.o edid.o -lm
 
 boot.o: boot.s
 	$(CC) $(CFLAGS) -c boot.s
@@ -31,6 +33,8 @@ usb.o: usb.c
 	$(CC) $(CFLAGS) -c usb.c
 demo.o: demo.c
 	$(CC) $(CFLAGS) -c demo.c
+edid.o: edid.c
+	$(CC) $(CFLAGS) -c edid.c
 
 clean:
 	rm -f *.o os.*
@@ -40,3 +44,7 @@ install: os.bin ../u-boot/spl/sunxi-spl.bin
 
 ../u-boot/spl/sunxi-spl.bin:
 	cd .. && make u-boot/u-boot-sunxi-with-spl.bin
+
+edid-test:
+	gcc -o edid-test edid.c edid-test.c -lm
+	./edid-test
