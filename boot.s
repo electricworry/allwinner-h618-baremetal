@@ -130,7 +130,11 @@ primary:
                                             // TWE=0         EL2, EL1 and EL0 execution of WFE instructions is not trapped to EL3
   MSR      SCR_EL3, x0
 
-  // Install dummy vector table
+  // Unmask interrupts, etc.
+  LDR x0, =0x0
+  MSR DAIF, x0
+
+  // Install vector table
   // ---------------------------
   LDR      x0, =vector_table
   MSR      VBAR_EL3, x0
@@ -242,6 +246,43 @@ primary:
 // Our baremetal programme
 // ------------------------------------------------------------
 
+  // GICD base is 0x3021000. GICC base ix 0x3022000. All registers are 32-bits.
+  LDR x4, =0x3021000
+  // GICD CTRL = 1
+  MOV w3, 0x1
+  STR w3, [x4]
+
+  // Enable IRQ 95 (HDMI)
+  LDR w3, [x4, 0x108]
+  ORR w3, w3, 0x80000000 // WORKS
+  STR w3, [x4, 0x108]
+
+  // Target processor 1
+  MOV x5, #0x85f
+  MOV w3, 1
+  STRB w3, [x4, x5]
+
+  // Set priority
+  MOV x5, #0x45f
+  STRB w3, [x4, x5]
+  
+  LDR x4, =0x3022000
+  // GICC CTRL = 1
+  MOV w3, 0x1
+  STR w3, [x4]
+  // PMR = 10
+  MOV w3, 10
+  STR w3, [x4, #0x4]
+
+
+  // gicd->isenabler[118/32] = 1<<(118%32);
+  // gicd->itargetsr[118] = 1;
+  // gicd->ipriorityr[118] = 1;
+  // struct gicc_reg* gicc = (struct gicc_reg*) GICC_BASE;
+  // gicc->ctlr = 1;
+  // gicc->pmr = 10;
+  // asm("cpsie if;"); // Enable interrupts
+
   // MRC p15,0,r0,c1,c0,2    // Read CP Access register
   // ORR r0,r0,#0x00f00000   // Enable full access to NEON/VFP (Coprocessors 10 and 11)
   // MCR p15,0,r0,c1,c0,2    // Write CP Access register
@@ -287,6 +328,22 @@ skippy:
   bl main
   // Just jump to exit
   b _exit
+
+print_forever:
+  // Print "!" to UART forever
+  LDR x4, =0x05000000
+  MOV w5, #0x21
+  STRB w5, [x4]
+  // b print_forever
+  b _exit
+
+f_forever:
+  // Print "!" to UART forever
+  LDR x4, =0x05000000
+  MOV w5, #0x46
+  STRB w5, [x4]
+  b f_forever
+
 
 // ------------------------------------------------------------
 // End of our baremetal programme
@@ -339,7 +396,7 @@ sync_current_el_spx:
 
   .balign 128
 irq_current_el_spx:
-  B        .                    //        IRQ
+  B        print_forever                    //        IRQ
 
   .balign 128
 fiq_current_el_spx:

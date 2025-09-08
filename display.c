@@ -398,15 +398,17 @@ void hdmi_init() {
     // END HDMI drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c sun8i_dw_hdmi_bind()
 
 
+                        printf("HERE\n");
     // BEGIN dw_hdmi_i2c_xfer() aka Read the EDID!
     /* This little widget gets called when sun4i_drv_bind is
         called and the whole Linux DRM framebuffer thing runs.
-        It's currently not working, probably due to clock stuff
-        I've not set up yet.
     */
     char edid[128] = {0};
     char pos;
     // HDMI_IH_MUTE_I2CM_STAT0 = 0
+                        printf("HERE\n");
+    hdmi_writeb(0xff, HDMI_IH_MUTE_I2CM_STAT0);
+                        printf("HERE\n");
     for (pos = 0; pos < sizeof(edid); pos++)
     {
         hdmi_writeb(0x50, HDMI_I2CM_SLAVE);
