@@ -12,6 +12,7 @@ volatile uint32_t* active_buffer;
 volatile uint32_t framebuffer1[512*512] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t framebuffer2[512*512] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t framebuffer3[512*512] __attribute__ ((section ("UNCACHED")));
+volatile uint32_t hdmi_interrupt = 0;
 
 
 #define HDMI_IH_PHY_STAT0_RX_SENSE \
@@ -50,6 +51,21 @@ void reg_phy_write(uint32_t reg, uint32_t val)
 void reg_phy_read(uint32_t reg, uint32_t *val)
 {
     *val =  *(uint32_t *)(HDMI_PHY_BASE + reg);
+}
+
+void consume_interrupt(void)
+{
+    // Acknowledge interrupt
+    hdmi_writeb(0x2, HDMI_IH_I2CM_STAT0);
+    hdmi_interrupt = 1;
+}
+
+void completion_hdmi(void)
+{
+    hdmi_interrupt = 0;
+    while (!hdmi_interrupt) {
+        udelay(100);
+    }
 }
 
 void reg_phy_update_bits(uint32_t reg, uint32_t mask, uint32_t val) 
@@ -374,20 +390,22 @@ void hdmi_init() {
                                 HDMI_IH_MUTE_I2CM_STAT0);
                     // END dw_hdmi_i2c_init()
                     // START dw_hdmi_phy_setup_hpd()
-                        /*
-                        * Configure the PHY RX SENSE and HPD interrupts polarities and clear
-                        * any pending interrupt.
-                        */
-                        hdmi_writeb(HDMI_PHY_HPD | HDMI_PHY_RX_SENSE, HDMI_PHY_POL0);
-                        hdmi_writeb(HDMI_IH_PHY_STAT0_HPD | HDMI_IH_PHY_STAT0_RX_SENSE,
-                                HDMI_IH_PHY_STAT0);
-                        /* Enable cable hot plug irq. */
-                        hdmi_writeb(phy_mask, HDMI_PHY_MASK0);
-                        /* Clear and unmute interrupts. */
-                        hdmi_writeb(HDMI_IH_PHY_STAT0_HPD | HDMI_IH_PHY_STAT0_RX_SENSE,
-                                HDMI_IH_PHY_STAT0);
-                        hdmi_writeb(~(HDMI_IH_PHY_STAT0_HPD | HDMI_IH_PHY_STAT0_RX_SENSE),
-                                HDMI_IH_MUTE_PHY_STAT0);
+                        // TODO: I disabled this; I'm not interested in hotplug events
+                        // /*
+                        // * Configure the PHY RX SENSE and HPD interrupts polarities and clear
+                        // * any pending interrupt.
+                        // */
+                        // hdmi_writeb(HDMI_PHY_HPD | HDMI_PHY_RX_SENSE, HDMI_PHY_POL0);
+                        // hdmi_writeb(HDMI_IH_PHY_STAT0_HPD | HDMI_IH_PHY_STAT0_RX_SENSE,
+                        //         HDMI_IH_PHY_STAT0);
+                        // /* Enable cable hot plug irq. */
+                        // hdmi_writeb(phy_mask, HDMI_PHY_MASK0);
+                        /* Clear interrupts. */
+                        // hdmi_writeb(HDMI_IH_PHY_STAT0_HPD | HDMI_IH_PHY_STAT0_RX_SENSE,
+                        //         HDMI_IH_PHY_STAT0);
+                        // /* Unmute interrupts. */
+                        // hdmi_writeb(~(HDMI_IH_PHY_STAT0_HPD | HDMI_IH_PHY_STAT0_RX_SENSE),
+                        //         HDMI_IH_MUTE_PHY_STAT0);
                     // END dw_hdmi_phy_setup_hpd()
                 // END dw_hdmi_init_hw()
                 // We're back in dw_hdmi_probe()!
@@ -398,24 +416,19 @@ void hdmi_init() {
     // END HDMI drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c sun8i_dw_hdmi_bind()
 
 
-                        printf("HERE\n");
     // BEGIN dw_hdmi_i2c_xfer() aka Read the EDID!
     /* This little widget gets called when sun4i_drv_bind is
         called and the whole Linux DRM framebuffer thing runs.
     */
     char edid[128] = {0};
     char pos;
-    // HDMI_IH_MUTE_I2CM_STAT0 = 0
-                        printf("HERE\n");
-    hdmi_writeb(0xff, HDMI_IH_MUTE_I2CM_STAT0);
-                        printf("HERE\n");
+    hdmi_writeb(0x0, HDMI_IH_MUTE_I2CM_STAT0);
     for (pos = 0; pos < sizeof(edid); pos++)
     {
         hdmi_writeb(0x50, HDMI_I2CM_SLAVE);
         hdmi_writeb(pos, HDMI_I2CM_ADDRESS);
         hdmi_writeb(HDMI_I2CM_OPERATION_READ, HDMI_I2CM_OPERATION);
-        //HDMI_IH_I2CM_STAT0 = 0x2 would acknowledge the IRQ if we had it.
-        udelay(1000); // This is too slow at 100.
+        completion_hdmi();
         edid[pos] = hdmi_readb(HDMI_I2CM_DATAI);
     }
     // HDMI_IH_MUTE_I2CM_STAT0 = 3

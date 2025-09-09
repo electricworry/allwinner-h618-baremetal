@@ -329,16 +329,8 @@ skippy:
   // Just jump to exit
   b _exit
 
-print_forever:
-  // Print "!" to UART forever
-  LDR x4, =0x05000000
-  MOV w5, #0x21
-  STRB w5, [x4]
-  // b print_forever
-  b _exit
-
 f_forever:
-  // Print "!" to UART forever
+  // Print "F" to UART forever
   LDR x4, =0x05000000
   MOV w5, #0x46
   STRB w5, [x4]
@@ -372,19 +364,19 @@ vector_table:
 // ------------------------------------------------------------
   .balign 128
 sync_current_el_sp0:
-  B        .                    //        Synchronous
+  B        f_forever                    //        Synchronous
 
   .balign 128
 irq_current_el_sp0:
-  B        .                    //        IRQ
+  B        f_forever                    //        IRQ
 
   .balign 128
 fiq_current_el_sp0:
-  B        .                    //        FIQ
+  B        f_forever                    //        FIQ
 
   .balign 128
 serror_current_el_sp0:
-  B        .                    //        SError
+  B        f_forever                    //        SError
 
 // ------------------------------------------------------------
 // Current EL with SPx
@@ -392,19 +384,42 @@ serror_current_el_sp0:
 
   .balign 128
 sync_current_el_spx:
-  B        .                    //        Synchronous
+  B        f_forever                    //        Synchronous
 
   .balign 128
-irq_current_el_spx:
-  B        print_forever                    //        IRQ
+irq_current_el_spx:                     //        IRQ
+  stp x0, x1, [sp, #-16]!
+  stp x2, x3, [sp, #-16]!
+  stp x4, x5, [sp, #-16]!
+  stp x6, x7, [sp, #-16]!
+  stp x8, x9, [sp, #-16]!
+  stp x10, x11, [sp, #-16]!
+  stp x12, x13, [sp, #-16]!
+  stp x14, x15, [sp, #-16]!
+  stp x16, x17, [sp, #-16]!
+  stp x18, x19, [sp, #-16]!
+  stp x29, x30, [sp, #-16]!
+  BL        consume_interrupt
+  ldp x29, x30, [sp], #16
+  ldp x18, x19, [sp], #16
+  ldp x16, x17, [sp], #16
+  ldp x14, x15, [sp], #16
+  ldp x12, x13, [sp], #16
+  ldp x10, x11, [sp], #16
+  ldp x8, x9, [sp], #16
+  ldp x6, x7, [sp], #16
+  ldp x4, x5, [sp], #16
+  ldp x2, x3, [sp], #16
+  ldp x0, x1, [sp], #16
+  eret
 
   .balign 128
 fiq_current_el_spx:
-  B        .                    //        FIQ
+  B        f_forever                    //        FIQ
 
   .balign 128
 serror_current_el_spx:
-  B        .                    //        SError
+  B        f_forever                    //        SError
 
 // ------------------------------------------------------------
 // Lower EL using AArch64
@@ -412,19 +427,19 @@ serror_current_el_spx:
 
   .balign 128
 sync_lower_el_aarch64:
-   B        .                    
+   B        f_forever                    
 
   .balign 128
 irq_lower_el_aarch64:
-  B        .                    //        IRQ
+  B        f_forever                    //        IRQ
 
   .balign 128
 fiq_lower_el_aarch64:
-  B        .                    //        FIQ
+  B        f_forever                    //        FIQ
 
   .balign 128
 serror_lower_el_aarch64:
-  B        .                    //        SError
+  B        f_forever                    //        SError
 
 // ------------------------------------------------------------
 // Lower EL using AArch32
