@@ -117,17 +117,17 @@ primary:
   
   // Configure SCR_EL3
   // ------------------
-  MOV      x0, #1                           // NS=1
-  ORR      x0, x0, #(1 << 1)                // IRQ=1         IRQs routed to EL3
-  ORR      x0, x0, #(1 << 2)                // FIQ=1         FIQs routed to EL3
-  ORR      x0, x0, #(1 << 3)                // EA=1          SError routed to EL3
-  ORR      x0, x0, #(1 << 8)                // HCE=1         HVC instructions are enabled
-  ORR      x0, x0, #(1 << 10)               // RW=1          Next EL down uses AArch64
-  ORR      x0, x0, #(1 << 11)               // ST=1          Secure EL1 can access CNTPS_TVAL_EL1, CNTPS_CTL_EL1 & CNTPS_CVAL_EL1
-                                            // SIF=0         Secure state instruction fetches from Non-secure memory are permitted
-                                            // SMD=0         SMC instructions are enabled
-                                            // TWI=0         EL2, EL1 and EL0 execution of WFI instructions is not trapped to EL3
-                                            // TWE=0         EL2, EL1 and EL0 execution of WFE instructions is not trapped to EL3
+  MOV      x0, #1                           // NS=1       EL0, EL1 to non-secure state
+  ORR      x0, x0, #(1 << 1)                // IRQ=1      IRQs routed to EL3
+  ORR      x0, x0, #(1 << 2)                // FIQ=1      FIQs routed to EL3
+  ORR      x0, x0, #(1 << 3)                // EA=1       SError routed to EL3
+  ORR      x0, x0, #(1 << 8)                // HCE=1      HVC instructions are enabled
+  ORR      x0, x0, #(1 << 10)               // RW=1       Next EL down uses AArch64
+  //ORR      x0, x0, #(1 << 11)               // ST=1       Secure EL1 can access CNTPS_TVAL_EL1, CNTPS_CTL_EL1 & CNTPS_CVAL_EL1 (only if NS is 0)
+                                            // SIF=0      Secure state instruction fetches from Non-secure memory are permitted
+                                            // SMD=0      SMC instructions are enabled
+                                            // TWI=0      EL2, EL1 and EL0 execution of WFI instructions is not trapped to EL3
+                                            // TWE=0      EL2, EL1 and EL0 execution of WFE instructions is not trapped to EL3
   MSR      SCR_EL3, x0
 
   // Unmask interrupts, etc.
@@ -257,20 +257,21 @@ primary:
   ORR w3, w3, 0x80000000 // WORKS
   STR w3, [x4, 0x108]
 
-  // Target processor 1
+  // IRQ95 targets processor 0
   MOV x5, #0x85f
   MOV w3, 1
   STRB w3, [x4, x5]
 
-  // Set priority
+  // IRQ95 set priority for processor 0
   MOV x5, #0x45f
   STRB w3, [x4, x5]
   
   LDR x4, =0x3022000
-  // GICC CTRL = 1
+  // Enable for the signaling of Group 1 interrupts by the CPU interface to the connected processor.
+  // This is the GICC_CTLR, which is mapped to the current CPU (0)
   MOV w3, 0x1
   STR w3, [x4]
-  // PMR = 10
+  // Priority mask. Only interrupts with a lower value will be signalled.
   MOV w3, 10
   STR w3, [x4, #0x4]
 

@@ -64,7 +64,7 @@ void completion_hdmi(void)
 {
     hdmi_interrupt = 0;
     while (!hdmi_interrupt) {
-        udelay(100);
+        asm("WFI");
     }
 }
 
