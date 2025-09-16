@@ -457,8 +457,8 @@ void hdmi_init() {
 
     // // It gets intereting... include/drm/drm_modes.h
 
-    // Assume we've got the clock from EDID, which is 32MHz.
-    uint32_t clk_rate = 32000000; // Verified correct.
+    // We get the pixel clock from EDID.
+    uint32_t clk_rate = e.pixel_clock;
 
     // In sun8i_h3_hdmi_phy_config() we set up some freq independent vals:
 
@@ -689,14 +689,14 @@ void hdmi_init() {
     //                  Hfront   40 Hsync  48 Hback   40 Hpol N
     //                  Vfront   13 Vsync   3 Vback   29 Vpol N
 
-    hdisplay = 800;
-    vdisplay = 480;
-    hblank = 128; // Hfront+Hsync+Hback
-    vblank = 45; // Vfront+Vsync+Vback
+    hdisplay = e.horizontal_px;
+    vdisplay = e.vertical_px;
+    hblank = e.horizontal_blanking_px; // Hfront+Hsync+Hback
+    vblank = e.vertical_blanking_px; // Vfront+Vsync+Vback
     h_de_hs = 40; // ???
     v_de_vs = 13; // ???
-    hsync_len = 48; // Hsync
-    vsync_len = 3; // Vsync
+    hsync_len = e.horizontal_sync_pulse_px; // Hsync
+    vsync_len = e.vertical_sync_pulse_px; // Vsync
 	/* Set up horizontal active pixel width */
 	hdmi_writeb(hdisplay >> 8, HDMI_FC_INHACTV1);
 	hdmi_writeb(hdisplay, HDMI_FC_INHACTV0);
