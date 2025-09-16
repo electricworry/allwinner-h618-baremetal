@@ -1,5 +1,3 @@
-#define GICD_BASE 0x01C81000
-
 
 #define GICD_BASE 0x01C81000
 struct gicd_reg {

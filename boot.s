@@ -400,7 +400,17 @@ irq_current_el_spx:                     //        IRQ
   stp x16, x17, [sp, #-16]!
   stp x18, x19, [sp, #-16]!
   stp x29, x30, [sp, #-16]!
-  BL        consume_interrupt
+  // Read GICC_IAR for interrupt details
+  LDR x24, =0x3022000 // GICC
+  MOV x25, 0x0c
+  LDR w26, [x24, x25]
+  // Pass to driver
+  MOV w0, w26
+  BL        interrupt_active
+  // End interrupt, GICC_EOIR
+  MOV x25, 0x10
+  STR w26, [x24, x25]
+  // Return
   ldp x29, x30, [sp], #16
   ldp x18, x19, [sp], #16
   ldp x16, x17, [sp], #16

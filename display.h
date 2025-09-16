@@ -1,7 +1,6 @@
-#define VIDEO_RAM_BYTES 0x180000
+#include "util.h"
 
-#define BIT(nr)			((1) << (nr))
-#define GENMASK(h, l)   (((~((unsigned int)0)) << (l)) & (~(0) >> (32 - 1 - (h))))
+#define VIDEO_RAM_BYTES 0x180000
 
 // The HDMI registers base address.
 #define DE_BASE               0x1000000 // allwinner,sun50i-a64-de2 + allwinner,sun50i-h616-de33-clk

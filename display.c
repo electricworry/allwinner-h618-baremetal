@@ -12,8 +12,30 @@ volatile uint32_t* active_buffer;
 volatile uint32_t framebuffer1[512*512] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t framebuffer2[512*512] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t framebuffer3[512*512] __attribute__ ((section ("UNCACHED")));
-volatile uint32_t hdmi_interrupt = 0;
+volatile uint32_t waiting_for_irq = 0;
 
+/*  IRQ handling
+*/
+
+void hdmi_writeb(uint8_t val, uint32_t reg);
+
+void complete_irq_hdmi(void)
+{
+    /*  Acknowlege interrupt. We don't care if it's ERROR or DONE. In error case
+        result will be all zeroes EDID which will fail safely (nothing to output
+        to).
+    */
+    hdmi_writeb(HDMI_IH_I2CM_STAT0_ERROR | HDMI_IH_I2CM_STAT0_DONE, HDMI_IH_I2CM_STAT0);
+    waiting_for_irq = 0;
+}
+
+void await_irq_completion(void)
+{
+    waiting_for_irq = 1;
+    while (waiting_for_irq) {
+        asm("WFI");
+    }
+}
 
 #define HDMI_IH_PHY_STAT0_RX_SENSE \
 	(HDMI_IH_PHY_STAT0_RX_SENSE0 | HDMI_IH_PHY_STAT0_RX_SENSE1 | \
@@ -51,21 +73,6 @@ void reg_phy_write(uint32_t reg, uint32_t val)
 void reg_phy_read(uint32_t reg, uint32_t *val)
 {
     *val =  *(uint32_t *)(HDMI_PHY_BASE + reg);
-}
-
-void consume_interrupt(void)
-{
-    // Acknowledge interrupt
-    hdmi_writeb(0x2, HDMI_IH_I2CM_STAT0);
-    hdmi_interrupt = 1;
-}
-
-void completion_hdmi(void)
-{
-    hdmi_interrupt = 0;
-    while (!hdmi_interrupt) {
-        asm("WFI");
-    }
 }
 
 void reg_phy_update_bits(uint32_t reg, uint32_t mask, uint32_t val) 
@@ -428,7 +435,7 @@ void hdmi_init() {
         hdmi_writeb(0x50, HDMI_I2CM_SLAVE);
         hdmi_writeb(pos, HDMI_I2CM_ADDRESS);
         hdmi_writeb(HDMI_I2CM_OPERATION_READ, HDMI_I2CM_OPERATION);
-        completion_hdmi();
+        await_irq_completion();
         edid[pos] = hdmi_readb(HDMI_I2CM_DATAI);
     }
     // HDMI_IH_MUTE_I2CM_STAT0 = 3
