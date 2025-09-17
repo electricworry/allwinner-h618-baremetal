@@ -102,25 +102,11 @@ void reg_phy_update_bits(uint32_t reg, uint32_t mask, uint32_t val)
     } \
 })
 
-void display_clocks_init()
+
+void ccu_probe(void)
 {
     uint32_t val;
-    /* This is somewhat documented in the H616 spec, but it is easier to decipher
-       the kernel source for this. It's less painful than the H3 code too.
-
-       Everything that needs to be done here can be inferred from
-       drivers/clk/sunxi-ng/ccu-sun50i-h616.c in combination with the device-tree.
-    */
-
-    // Enable the iosc
-    // SUN6I_DCXO_CTRL_REG |= (1 << 0);
-
-    // START r_ccu aka prmc
-        // SUN50I_H616_CLK_R_APB1_TWD_REG |= (1 << 0); // This clock is marked as critical
-    // END r_ccu prmc
-
     // START drivers/clk/sunxi-ng/ccu-sun50i-h616.c sun50i_h616_ccu_probe()
-
         /* Enable the lock bits and the output enable bits on all PLLs */
         SUN50I_H616_PLL_CPUX_REG |= (1 << 29) | (1 << 27);
         SUN50I_H616_PLL_DDR0_REG |= (1 << 29) | (1 << 27);
@@ -134,7 +120,6 @@ void display_clocks_init()
         SUN50I_H616_PLL_VE_REG |= (1 << 29) | (1 << 27);
         SUN50I_H616_PLL_DE_REG |= (1 << 29) | (1 << 27);
         SUN50I_H616_PLL_AUDIO_REG |= (1 << 29) | (1 << 27);
-
         /*
         * Force the output divider of video PLLs to 0.
         *
@@ -143,7 +128,6 @@ void display_clocks_init()
         SUN50I_H616_PLL_VIDEO0_REG &= ~(1 << 0);
         SUN50I_H616_PLL_VIDEO1_REG &= ~(1 << 0);
         SUN50I_H616_PLL_VIDEO2_REG &= ~(1 << 0);
-
         /*
         * Force OHCI 12M clock sources to 00 (12MHz divided from 48MHz)
         *
@@ -154,7 +138,6 @@ void display_clocks_init()
         SUN50I_H616_USB1_CLK_REG &= ~GENMASK(25, 24);
         SUN50I_H616_USB2_CLK_REG &= ~GENMASK(25, 24);
         SUN50I_H616_USB3_CLK_REG &= ~GENMASK(25, 24);
-
         /*
         * Set the output-divider for the pll-audio clocks (M0) to 2 and the
         * input divider (M1) to 1 as recommended by the manual when using
@@ -164,7 +147,6 @@ void display_clocks_init()
         val &= ~(1 << 1);
         val |= (1 << 0);
         SUN50I_H616_PLL_AUDIO_REG = val;
-
         /*
         * Set the input-divider for the gpu1 clock to 3, to reach a safe 400 MHz.
         */
@@ -172,7 +154,6 @@ void display_clocks_init()
         val &= ~GENMASK(1, 0);
         val |= 2;
         SUN50I_H616_GPU_CLK1_REG = val;
-
         /*
         * First clock parent (osc32K) is unusable for CEC. But since there
         * is no good way to force parent switch (both run with same frequency),
@@ -181,8 +162,25 @@ void display_clocks_init()
         val = SUN50I_H616_HDMI_CEC_CLK_REG;
         val |= (1 << 24);
         SUN50I_H616_HDMI_CEC_CLK_REG = val;
-
     // END drivers/clk/sunxi-ng/ccu-sun50i-h616.c sun50i_h616_ccu_probe()
+}
+
+void display_clocks_init()
+{
+    /* This is somewhat documented in the H616 spec, but it is easier to decipher
+       the kernel source for this. It's less painful than the H3 code too.
+
+       Everything that needs to be done here can be inferred from
+       drivers/clk/sunxi-ng/ccu-sun50i-h616.c in combination with the device-tree.
+    */
+    ccu_probe();
+
+    // Enable the iosc
+    // SUN6I_DCXO_CTRL_REG |= (1 << 0);
+
+    // START r_ccu aka prmc
+        // SUN50I_H616_CLK_R_APB1_TWD_REG |= (1 << 0); // This clock is marked as critical
+    // END r_ccu prmc
 
     // TODO: Various guff I was playing with.
     // // START rtc
