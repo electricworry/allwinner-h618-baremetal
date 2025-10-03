@@ -1,5 +1,5 @@
 #include "ports.h"
-#include "ccu.h"
+#include "clk/clk.h"
 
 void gpio_init() {
   BUS_CLK_GATING2 |= (1<<5);

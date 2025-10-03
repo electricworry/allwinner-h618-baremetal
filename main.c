@@ -5,7 +5,7 @@
 #include "system.h"
 #include "display.h"
 #include "interrupts.h"
-#include "ccu.h"
+#include "clk/clk.h"
 #include "usb.h"
 
 uint32_t tick_counter;

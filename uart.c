@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "uart.h"
 #include "ports.h"
-#include "ccu.h"
+#include "clk/clk.h"
 
 // Set up the UART (serial port)
 void uart_init()

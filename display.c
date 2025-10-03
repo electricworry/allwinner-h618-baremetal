@@ -3,7 +3,7 @@
 #include <sys/param.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "ccu.h"
+#include "clk/clk.h"
 #include "system.h"
 #include "display.h"
 #include "edid.h"
@@ -103,78 +103,196 @@ void reg_phy_update_bits(uint32_t reg, uint32_t mask, uint32_t val)
 })
 
 
-void ccu_probe(void)
+void sun50i_h616_ccu_probe(void)
 {
     uint32_t val;
-    // START drivers/clk/sunxi-ng/ccu-sun50i-h616.c sun50i_h616_ccu_probe()
-        /* Enable the lock bits and the output enable bits on all PLLs */
-        SUN50I_H616_PLL_CPUX_REG |= (1 << 29) | (1 << 27);
-        SUN50I_H616_PLL_DDR0_REG |= (1 << 29) | (1 << 27);
-        SUN50I_H616_PLL_DDR1_REG |= (1 << 29) | (1 << 27);
-        SUN50I_H616_PLL_PERIPH0_REG |= (1 << 29) | (1 << 27);
-        SUN50I_H616_PLL_PERIPH1_REG |= (1 << 29) | (1 << 27);
-        SUN50I_H616_PLL_GPU_REG |= (1 << 29) | (1 << 27);
-        SUN50I_H616_PLL_VIDEO0_REG |= (1 << 29) | (1 << 27);
-        SUN50I_H616_PLL_VIDEO1_REG |= (1 << 29) | (1 << 27);
-        SUN50I_H616_PLL_VIDEO2_REG |= (1 << 29) | (1 << 27);
-        SUN50I_H616_PLL_VE_REG |= (1 << 29) | (1 << 27);
-        SUN50I_H616_PLL_DE_REG |= (1 << 29) | (1 << 27);
-        SUN50I_H616_PLL_AUDIO_REG |= (1 << 29) | (1 << 27);
-        /*
-        * Force the output divider of video PLLs to 0.
-        *
-        * See the comment before pll-video0 definition for the reason.
-        */
-        SUN50I_H616_PLL_VIDEO0_REG &= ~(1 << 0);
-        SUN50I_H616_PLL_VIDEO1_REG &= ~(1 << 0);
-        SUN50I_H616_PLL_VIDEO2_REG &= ~(1 << 0);
-        /*
-        * Force OHCI 12M clock sources to 00 (12MHz divided from 48MHz)
-        *
-        * This clock mux is still mysterious, and the code just enforces
-        * it to have a valid clock parent.
-        */
-        SUN50I_H616_USB0_CLK_REG &= ~GENMASK(25, 24);
-        SUN50I_H616_USB1_CLK_REG &= ~GENMASK(25, 24);
-        SUN50I_H616_USB2_CLK_REG &= ~GENMASK(25, 24);
-        SUN50I_H616_USB3_CLK_REG &= ~GENMASK(25, 24);
-        /*
-        * Set the output-divider for the pll-audio clocks (M0) to 2 and the
-        * input divider (M1) to 1 as recommended by the manual when using
-        * SDM.
-        */
-        val = SUN50I_H616_PLL_AUDIO_REG;
-        val &= ~(1 << 1);
-        val |= (1 << 0);
-        SUN50I_H616_PLL_AUDIO_REG = val;
-        /*
-        * Set the input-divider for the gpu1 clock to 3, to reach a safe 400 MHz.
-        */
-        val = SUN50I_H616_GPU_CLK1_REG;
-        val &= ~GENMASK(1, 0);
-        val |= 2;
-        SUN50I_H616_GPU_CLK1_REG = val;
-        /*
-        * First clock parent (osc32K) is unusable for CEC. But since there
-        * is no good way to force parent switch (both run with same frequency),
-        * just set second clock parent here.
-        */
-        val = SUN50I_H616_HDMI_CEC_CLK_REG;
-        val |= (1 << 24);
-        SUN50I_H616_HDMI_CEC_CLK_REG = val;
-    // END drivers/clk/sunxi-ng/ccu-sun50i-h616.c sun50i_h616_ccu_probe()
+    /* Enable the lock bits and the output enable bits on all PLLs */
+    SUN50I_H616_PLL_CPUX_REG |= (1 << 29) | (1 << 27);
+    SUN50I_H616_PLL_DDR0_REG |= (1 << 29) | (1 << 27);
+    SUN50I_H616_PLL_DDR1_REG |= (1 << 29) | (1 << 27);
+    SUN50I_H616_PLL_PERIPH0_REG |= (1 << 29) | (1 << 27);
+    SUN50I_H616_PLL_PERIPH1_REG |= (1 << 29) | (1 << 27);
+    SUN50I_H616_PLL_GPU_REG |= (1 << 29) | (1 << 27);
+    SUN50I_H616_PLL_VIDEO0_REG |= (1 << 29) | (1 << 27);
+    SUN50I_H616_PLL_VIDEO1_REG |= (1 << 29) | (1 << 27);
+    SUN50I_H616_PLL_VIDEO2_REG |= (1 << 29) | (1 << 27);
+    SUN50I_H616_PLL_VE_REG |= (1 << 29) | (1 << 27);
+    SUN50I_H616_PLL_DE_REG |= (1 << 29) | (1 << 27);
+    SUN50I_H616_PLL_AUDIO_REG |= (1 << 29) | (1 << 27);
+    /*
+    * Force the output divider of video PLLs to 0.
+    *
+    * See the comment before pll-video0 definition for the reason.
+    */
+    SUN50I_H616_PLL_VIDEO0_REG &= ~(1 << 0);
+    SUN50I_H616_PLL_VIDEO1_REG &= ~(1 << 0);
+    SUN50I_H616_PLL_VIDEO2_REG &= ~(1 << 0);
+    /*
+    * Force OHCI 12M clock sources to 00 (12MHz divided from 48MHz)
+    *
+    * This clock mux is still mysterious, and the code just enforces
+    * it to have a valid clock parent.
+    */
+    SUN50I_H616_USB0_CLK_REG &= ~GENMASK(25, 24);
+    SUN50I_H616_USB1_CLK_REG &= ~GENMASK(25, 24);
+    SUN50I_H616_USB2_CLK_REG &= ~GENMASK(25, 24);
+    SUN50I_H616_USB3_CLK_REG &= ~GENMASK(25, 24);
+    /*
+    * Set the output-divider for the pll-audio clocks (M0) to 2 and the
+    * input divider (M1) to 1 as recommended by the manual when using
+    * SDM.
+    */
+    val = SUN50I_H616_PLL_AUDIO_REG;
+    val &= ~(1 << 1);
+    val |= (1 << 0);
+    SUN50I_H616_PLL_AUDIO_REG = val;
+    /*
+    * Set the input-divider for the gpu1 clock to 3, to reach a safe 400 MHz.
+    */
+    val = SUN50I_H616_GPU_CLK1_REG;
+    val &= ~GENMASK(1, 0);
+    val |= 2;
+    SUN50I_H616_GPU_CLK1_REG = val;
+    /*
+    * First clock parent (osc32K) is unusable for CEC. But since there
+    * is no good way to force parent switch (both run with same frequency),
+    * just set second clock parent here.
+    */
+    val = SUN50I_H616_HDMI_CEC_CLK_REG;
+    val |= (1 << 24);
+    SUN50I_H616_HDMI_CEC_CLK_REG = val;
+
+    // devm_sunxi_ccu_probe() is called - i.e. the sunxi-ng framework.
+
+    // cpux is marked as critical
+    // cpux parents: osc24M osc32k(??) iosc pll-cpux pll-periph0
+    // <&rtc CLK_IOSC> doesn't exist
+    SUN50I_H616_PLL_CPUX_REG |= (1 << 31); // pll-cpux
+    SUN50I_H616_PLL_PERIPH0_REG |= (1 << 31); // pll-periph0
+    // cpux has no gate
+
+    // mbus is marked as critical
+    // mbus parents: osc24M pll-periph0-2x pll-ddr0 pll-ddr1
+    // pll-periph0-2x parents: pll_periph0
+    SUN50I_H616_PLL_PERIPH0_REG |= (1 << 31); // pll-periph0
+    // pll-periph0-2x has no gate
+    SUN50I_H616_PLL_DDR0_REG |= (1<< 31); // pll-ddr0
+    SUN50I_H616_PLL_DDR1_REG |= (1<< 31); // pll-ddr1 // though not in reality?
+    SUN50I_H616_MBUS_CFG_REG |= (1 << 31); // mbus
+
+    // gpu1 is marked as critical
+    // gpu1 parents: pll-periph0-2x
+    // pll-periph0-2x parents: pll_periph0
+    SUN50I_H616_GPU_CLK1_REG |= (1 << 31); // gpu1
+
+    // dram is marked as critical
+    // dram parents: pll-ddr0 pll-ddr1
+    // dram has no gate  
+
+    // bus-dram is marked as critical
+    // bus-dram parents: psi-ahb1-ahb2
+    // psi-ahb1-ahb2 parents: osc24M osc32k iosc pll-periph0
+    // psi-ahb1-ahb2 has no gate
+    SUN50I_H616_DRAM_BGR_REG |= (1 << 0); // bus-dram
+
+    // TODO bus-dma also enabled for unknown reasons
+
+    // TODO mbus-dma also enabled for unknown reasons
+
+    // TODO: Skipping the notifier registration
 }
 
-void display_clocks_init()
+void sun6i_rtc_probe(void)
 {
-    /* This is somewhat documented in the H616 spec, but it is easier to decipher
-       the kernel source for this. It's less painful than the H3 code too.
+    SUN50I_H616_CLK_R_APB1_RTC_REG |= (1 << 0); // First get "bus" <&r_ccu CLK_R_APB1_RTC> and enable.
+	/* clear the alarm counter value */
+    SUN6I_ALRM_COUNTER = 0;
+	/* disable counter alarm */
+    SUN6I_ALRM_EN = 0;
+	/* disable counter alarm interrupt */
+    SUN6I_ALRM_IRQ_EN = 0;
+	/* disable week alarm */
+    SUN6I_ALRM1_EN = 0;
+	/* disable week alarm interrupt */
+    SUN6I_ALRM1_IRQ_EN = 0;
+	/* clear counter alarm pending interrupts */
+    SUN6I_ALRM_IRQ_STA = SUN6I_ALRM_IRQ_STA_CNT_IRQ_PEND;
+	/* clear week alarm pending interrupts */
+    SUN6I_ALRM1_IRQ_STA = SUN6I_ALRM1_IRQ_STA_WEEK_IRQ_PEND;
+	/* disable alarm wakeup */
+    SUN6I_ALARM_CONFIG = 0;
+    /* TODO Enable the losc clock - I don't think I need this. */
+    // In fact I don't think I really care about any of this!
+}
 
-       Everything that needs to be done here can be inferred from
+/*  The Display Engine (which provides the framebuffer / DRM) to Linux is made
+    up of multiple components.
+    Explain further.
+*/
+void display_clocks_init(void)
+{
+    /* This is somewhat documented in the H616 spec, but it is easier to
+       decipher the kernel source for this. The H616 kernel code is less painful
+       than the H3 code too.
        drivers/clk/sunxi-ng/ccu-sun50i-h616.c in combination with the device-tree.
     */
-    ccu_probe();
 
+    /* START R_CCU allwinner,sun50i-h616-r-ccu linux/drivers/clk/sunxi-ng/ccu-sun50i-h6-r.c:sun50i_h6_r_ccu_probe() */
+    // r-apb1-twd is marked as critical
+    // r-apb1-twd parents: r-apb1
+    // r-apb1 parents: r-ahb
+    // r-ahb parents: ar-100
+    // ar-100 parents: osc24M osc32k(??) iosc pll-periph0
+    // pll-periph0 is not defined
+    // <&rtc CLK_IOSC> doesn't exist
+    // ar-100 has no gate
+    // r-ahb has no gate
+    // r-apb1 has no gate
+    SUN50I_H616_CLK_R_APB1_TWD_REG |= (1 << 0); // r-apb1-twd
+    /* END R_CCU allwinner,sun50i-h616-r-ccu linux/drivers/clk/sunxi-ng/ccu-sun50i-h6-r.c:sun50i_h6_r_ccu_probe() */
+
+    /* START CCU allwinner,sun50i-h616-ccu linux/drivers/clk/sunxi-ng/ccu-sun50i-h616.c:sun50i_h616_ccu_probe() */
+    sun50i_h616_ccu_probe();
+    /* END CCU allwinner,sun50i-h616-ccu linux/drivers/clk/sunxi-ng/ccu-sun50i-h616.c:sun50i_h616_ccu_probe() */
+
+    /* DE allwinner,sun50i-h6-display-engine linux/drivers/gpu/drm/sun4i/sun4i_drv.c:sun4i_drv_probe() */
+
+    /* TCON-TV allwinner,sun8i-r40-tcon-tv linux/drivers/gpu/drm/sun4i/sun4i_tcon.c:sun4i_tcon_probe() */
+
+    /* HDMI-PHY allwinner,sun50i-h616-hdmi-phy linux/drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c:sun8i_hdmi_phy_probe() */
+
+    /* TCON allwinner,sun50i-h6-tcon-top linux/drivers/gpu/drm/sun4i/sun8i_tcon_top.c:sun8i_tcon_top_probe() */
+
+    /* START RTC allwinner,sun50i-h616-rtc linux/drivers/rtc/rtc-sun6i.c:sun6i_rtc_probe() */
+    sun6i_rtc_probe();
+    /* END RTC allwinner,sun50i-h616-rtc linux/drivers/rtc/rtc-sun6i.c:sun6i_rtc_probe() */
+
+    /* START display_clocks allwinner,sun50i-h616-de33-clk linux/drivers/clk/sunxi-ng/ccu-sun8i-de2.c:sunxi_de2_clk_probe() */
+    // Enable "bus" clk <&ccu CLK_BUS_DE>. Parents: psi-ahb1-ahb2
+    // psi-ahb1-ahb2 has no gate. Parents: osc24M osc32k iosc pll-periph0 (handled already)
+    SUN50I_H616_DE_BGR_REG |= (1 << 0);  // Enable CLK_BUS_DE
+    // Enable "mod" clk <&ccu CLK_DE>. Parents: pll-de pll-periph0-2x
+    // pll-de parents: osc24M
+    // pll-periph0-2x has gate: Parents: pll-periph0 (already done)
+    SUN50I_H616_PLL_DE_REG |= (1 << 31); // Enable pll-de
+    SUN50I_H616_DE_CLK_REG |= (1 << 31); // Enable CLK_DE
+    SUN50I_H616_DE_BGR_REG |= (1 << 16); // De-assert RST_BUS_DE
+    DE_RANDOM_1_REG = DE_RANDOM_1_VAL;
+    DE_RANDOM_2_REG = DE_RANDOM_2_VAL;
+    // devm_sunxi_ccu_probe() is called - i.e. the sunxi-ng framework - nothing happens
+    /* END display-clocks allwinner,sun50i-h616-de33-clk linux/drivers/clk/sunxi-ng/ccu-sun8i-de2.c:sunxi_de2_clk_probe() */
+
+    /* MIXER allwinner,sun50i-h616-de33-mixer-0 linux/drivers/gpu/drm/sun4i/sun8i_mixer.c:sun8i_mixer_probe() */
+
+    /* HDMI allwinner,sun50i-h6-dw-hdmi linux/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_probe() */
+
+    /* Thus, the clock setup is all done. Hereafter, we call sun4i_drv_bind()
+       which will do the serious work to get the framebuffer going. */
+
+
+
+
+    // TODO DELETE THE FOLLOWING CRAP
     // Enable the iosc
     // SUN6I_DCXO_CTRL_REG |= (1 << 0);
 
@@ -182,7 +300,7 @@ void display_clocks_init()
         // SUN50I_H616_CLK_R_APB1_TWD_REG |= (1 << 0); // This clock is marked as critical
     // END r_ccu prmc
 
-    // TODO: Various guff I was playing with.
+    // Various guff I was playing with.
     // // START rtc
     //     // The rtc needs the following r_ccu clock, so we enable it. 
     //     // SUN50I_H616_CLK_R_APB1_RTC_REG |= (1 << 0); 
@@ -200,7 +318,7 @@ void display_clocks_init()
     // SUN50I_H616_HDMI_BGR_REG |= (1<<0); // Enable CLK_BUS_HDMI
     // SUN50I_H616_HDMI_BGR_REG |= (1<<16) | (1<<17); // De-assert reset of RST_BUS_HDMI and RST_BUS_HDMI_SUB
     // SUN50I_H616_HDMI0_SLOW_CLK_REG    = (1<<31); // Enable HDMI slow clk
-    // TODO: Need to enable CLK_HDMI
+    // Need to enable CLK_HDMI
     // static const char * const hdmi_parents[] = { "pll-video0", "pll-video0-4x",
     //                         "pll-video2", "pll-video2-4x" };
     // static SUNXI_CCU_M_WITH_MUX_GATE(hdmi_clk, "hdmi", hdmi_parents, 0xb00,
@@ -220,7 +338,19 @@ void display_clocks_init()
     // TCON0_CLK        = (1<<31) | 3; // Enable TCON0 clk, divide by 4
 }
 
-void hdmi_init() {
+/*  Now having set up the clocks, we move onto setting up the graphics IP blocks
+    correctly. Everything here happens from sun4i_drv_bind()
+*/
+void hdmi_init(void) {
+
+    /*  The following is taken from the component sunxi driver. See docs/STACKTRACE.txt for the full horrible story.
+        Everything starts from sun4i_drv_bind() which due to the component nature causes:
+        sun8i_mixer_bind()
+        sun8i_tcon_top_bind()
+        sun4i_tcon_bind
+        sun8i_dw_hdmi_bind()
+        etc.
+    */
 
     uint32_t val;
     uint8_t bval;
@@ -228,24 +358,8 @@ void hdmi_init() {
     int ret;
     uint8_t phy_mask;
 
-    // The following is taken from the component sunxi driver. See docs/STACKTRACE.txt for the full horrible story.
-    // Everything starts from sun8i_dw_hdmi_probe which due to the component nature causes:
-    // sun4i_drv_bind()
-    // sun4i_tcon_bind
-    // sun8i_dw_hdmi_bind()
-    // etc.
-    // It's very confusing, and I'd like to understand it better.
-
-    // TODO: Anything before this?
-
-    // START drivers/clk/sunxi-ng/ccu-sun8i-de2.c sunxi_de2_clk_probe()
-        SUN50I_H616_DE_BGR_REG |= (1 << 0);  // Enable CLK_BUS_DE
-        SUN50I_H616_PLL_DE_REG |= (1 << 31); // Enable pll-de (parent of next)
-        SUN50I_H616_DE_CLK_REG |= (1 << 31); // Enable CLK_DE
-        SUN50I_H616_DE_BGR_REG |= (1 << 16); // De-assert RST_BUS_DE
-        DE_RANDOM_1_REG = DE_RANDOM_1_VAL;
-        DE_RANDOM_2_REG = DE_RANDOM_2_VAL;
-    // END drivers/clk/sunxi-ng/ccu-sun8i-de2.c sunxi_de2_clk_probe()
+    // MIXER allwinner,sun50i-h616-de33-mixer-0 linux/drivers/gpu/drm/sun4i/sun8i_mixer.c:sun8i_mixer_bind()
+    // YOU_ARE_HERE
 
     // START drivers/gpu/drm/sun4i/sun8i_tcon_top.c sun8i_tcon_top_bind()
         SUN50I_H616_DISPLAY_IF_TOP_BGR_REG |= (1 << 16); // De-assert RST_BUS_TCON_TOP
