@@ -234,7 +234,6 @@ void display_clocks_init(void)
     /* This is somewhat documented in the H616 spec, but it is easier to
        decipher the kernel source for this. The H616 kernel code is less painful
        than the H3 code too.
-       drivers/clk/sunxi-ng/ccu-sun50i-h616.c in combination with the device-tree.
     */
 
     /* START R_CCU allwinner,sun50i-h616-r-ccu linux/drivers/clk/sunxi-ng/ccu-sun50i-h6-r.c:sun50i_h6_r_ccu_probe() */
@@ -357,11 +356,52 @@ void hdmi_init(void) {
     uint32_t phy_rcal;
     int ret;
     uint8_t phy_mask;
+	int plane_cnt, i;
 
-    // MIXER allwinner,sun50i-h616-de33-mixer-0 linux/drivers/gpu/drm/sun4i/sun8i_mixer.c:sun8i_mixer_bind()
-    // YOU_ARE_HERE
+    /* START MIXER allwinner,sun50i-h616-de33-mixer-0 linux/drivers/gpu/drm/sun4i/sun8i_mixer.c:sun8i_mixer_bind() */
+    // Ops are defined.
+    // DMA is configured.
+    // Deassert reset: resets = <&display_clocks RST_MIXER0>
+    DE33_CLK_RST_MIXER0 |= (1 << 0);
+    // Enable "bus" clk: <&display_clocks CLK_BUS_MIXER0>. Parents: bus-de
+    // TODO: Is there a bus-de?
+    DE33_CLK_BUS_MIXER0 |= (1 << 0);
+	/*
+	 * It seems that we need to enforce that rate for whatever
+	 * reason for the mixer to be functional. Make sure it's the
+	 * case.
+	 */
+    // Set CLK_MIXER0 rate to 600 MHz.
+    // mixer0 has CLK_SET_RATE_PARENT feature, as does mixer0-div
+    
+    // TODO: unfinished - Skipping for now, this is complicated.
 
-    // START drivers/gpu/drm/sun4i/sun8i_tcon_top.c sun8i_tcon_top_bind()
+    // Enable "mod" clk: <&display_clocks CLK_MIXER0>. Parents: mixer0-div
+    // mixer0-div has no gate. Parents: de
+    // TODO: Is there a de?
+    DE33_CLK_MIXER0 |= (1 << 0);
+        /* START sun8i_mixer_init() */
+	    /* Enable the mixer */
+        SUN8I_MIXER_GLOBAL_CTL = SUN8I_MIXER_GLOBAL_CTL_RT_EN;
+        SUN50I_MIXER_GLOBAL_CLK = 1;
+	    /* Set background color to black */
+        SUN8I_MIXER_BLEND_BKCOLOR = SUN8I_MIXER_BLEND_COLOR_BLACK;
+        /*
+        * Set fill color of bottom plane to black. Generally not needed
+        * except when VI plane is at bottom (zpos = 0) and enabled.
+        */
+        SUN8I_MIXER_BLEND_PIPE_CTL = SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0);
+        SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = SUN8I_MIXER_BLEND_COLOR_BLACK;
+
+        plane_cnt = 1 /* vi_num */ + 3 /* ui_num */;
+        for (i = 0; i < plane_cnt; i++) {
+            SUN8I_MIXER_BLEND_MODE(i) = SUN8I_MIXER_BLEND_MODE_DEF;
+        }
+        SUN8I_MIXER_BLEND_PIPE_CTL &= ~SUN8I_MIXER_BLEND_PIPE_CTL_EN_MSK;
+        /* END sun8i_mixer_init() */
+    /* END MIXER allwinner,sun50i-h616-de33-mixer-0 linux/drivers/gpu/drm/sun4i/sun8i_mixer.c:sun8i_mixer_bind() */
+
+    // START drivers/gpu/drm/sun4i/sun8i_tcon_top.c sun8i_tcon_top_bind() <---- CONTINUE_HERE!
         SUN50I_H616_DISPLAY_IF_TOP_BGR_REG |= (1 << 16); // De-assert RST_BUS_TCON_TOP
         SUN50I_H616_DISPLAY_IF_TOP_BGR_REG |= (1 << 0);// Enable CLK_BUS_TCON_TOP
         /*

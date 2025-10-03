@@ -26,13 +26,6 @@
 #define SUN4I_TCON1_IO_TRI_REG       *(volatile uint32_t *)(SUN4I_TCON_BASE + 0xf4)
 
 
-// From drivers/clk/sunxi-ng/ccu-sun8i-de2.c
-
-#define DE_RANDOM_1_REG       *(volatile uint32_t *)(DE_BASE + 0x8024)
-#define DE_RANDOM_1_VAL       0x0
-#define DE_RANDOM_2_REG       *(volatile uint32_t *)(DE_BASE + 0x8028)
-#define DE_RANDOM_2_VAL       0x0000a980
-
 // From drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
 
 /* Identification Registers */
