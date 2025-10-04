@@ -112,9 +112,7 @@ int parse_edid_structure(uint8_t *edid, struct edid *dst)
         dst->height_cm = edid[0x16];
         dst->aspect_ratio = (float) dst->width_cm / (float) dst->height_cm;
     }
-    if (!edid[0x17])
-        return EDID_FATAL;
-    else if (!edid[0x17] == 0xff)
+    if (edid[0x17] == 0xff)
         dst->gamma_elsewhere = true;
     else
         dst->gamma = ((float)edid[0x17] + 100.0) / 100.0;
