@@ -34,7 +34,7 @@ void game_tick_next();
 void __attribute__((interrupt("FIQ"))) interrupt(void) {
   printf("Received INT\n");
   game_tick_next();
-  LCD0_GINT0 &= ~(1<<12);
+  // LCD0_GINT0 &= ~(1<<12);
 }
 
 // Copy the interrupt table from _ivt to 0x0

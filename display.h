@@ -1,7 +1,5 @@
 #include "util.h"
 
-#define VIDEO_RAM_BYTES 0x180000
-
 // The HDMI registers base address.
 #define DE_BASE               0x1000000 // allwinner,sun50i-a64-de2 + allwinner,sun50i-h616-de33-clk
 #define HDMI_BASE             0x6000000 // allwinner,sun50i-h6-dw-hdmi
@@ -11,56 +9,97 @@
 
 // From TCON_TOP
 
-#define TCON_TOP_CLK_NUM					3
-#define TCON_TOP_BASE         0x6510000 // allwinner,sun50i-h6-tcon-top
-#define TCON_TOP_PORT_SEL_REG       *(volatile uint32_t *)(TCON_TOP_BASE + 0x1C)
-#define TCON_TOP_GATE_SRC_REG       *(volatile uint32_t *)(TCON_TOP_BASE + 0x20)
+#define TCON_TOP_BASE               0x6510000 // allwinner,sun50i-h6-tcon-top
+#define TCON_TOP_TCON_TV_SETUP_REG	*(volatile uint32_t *)(TCON_TOP_BASE + 0x00)
+#define TCON_TOP_PORT_SEL_REG		*(volatile uint32_t *)(TCON_TOP_BASE + 0x1C)
+#define TCON_TOP_PORT_DE0_MSK			GENMASK(1, 0)
+#define TCON_TOP_PORT_DE1_MSK			GENMASK(5, 4)
+#define TCON_TOP_GATE_SRC_REG		*(volatile uint32_t *)(TCON_TOP_BASE + 0x20)
+#define TCON_TOP_HDMI_SRC_MSK			GENMASK(29, 28)
+#define TCON_TOP_TCON_TV1_GATE			24
+#define TCON_TOP_TCON_TV0_GATE			20
+#define TCON_TOP_TCON_DSI_GATE			16
+#define TCON_TOP_CLK_NUM				3
+#define TCON_TOP_
 
 // From TCON_TV
 
 #define SUN4I_TCON_BASE         0x06515000 // allwinner,sun8i-r40-tcon-tv
 #define SUN4I_TCON_GCTL_REG       *(volatile uint32_t *)(SUN4I_TCON_BASE + 0x00)
+#define SUN4I_TCON_GCTL_TCON_ENABLE			BIT(31)
+#define SUN4I_TCON_GCTL_IOMAP_MASK			BIT(0)
+#define SUN4I_TCON_GCTL_IOMAP_TCON1			(1 << 0)
 #define SUN4I_TCON_GINT0_REG       *(volatile uint32_t *)(SUN4I_TCON_BASE + 0x04)
 #define SUN4I_TCON_GINT1_REG       *(volatile uint32_t *)(SUN4I_TCON_BASE + 0x08)
 #define SUN4I_TCON0_IO_TRI_REG       *(volatile uint32_t *)(SUN4I_TCON_BASE + 0x8c)
 #define SUN4I_TCON1_IO_TRI_REG       *(volatile uint32_t *)(SUN4I_TCON_BASE + 0xf4)
+#define SUN4I_TCON1_CTL_REG			*(volatile uint32_t *)(SUN4I_TCON_BASE + 0x90)
+#define SUN4I_TCON1_CTL_TCON_ENABLE			BIT(31)
+#define SUN4I_TCON1_CTL_CLK_DELAY_MASK			GENMASK(8, 4)
+#define SUN4I_TCON1_CTL_CLK_DELAY(delay)		((delay << 4) & SUN4I_TCON1_CTL_CLK_DELAY_MASK)
+
+#define SUN4I_TCON1_BASIC0_REG			*(volatile uint32_t *)(SUN4I_TCON_BASE + 0x94)
+#define SUN4I_TCON1_BASIC0_X(width)			((((width) - 1) & 0xfff) << 16)
+#define SUN4I_TCON1_BASIC0_Y(height)			(((height) - 1) & 0xfff)
+
+#define SUN4I_TCON1_BASIC1_REG			*(volatile uint32_t *)(SUN4I_TCON_BASE + 0x98)
+#define SUN4I_TCON1_BASIC1_X(width)			((((width) - 1) & 0xfff) << 16)
+#define SUN4I_TCON1_BASIC1_Y(height)			(((height) - 1) & 0xfff)
+
+#define SUN4I_TCON1_BASIC2_REG			*(volatile uint32_t *)(SUN4I_TCON_BASE + 0x9c)
+#define SUN4I_TCON1_BASIC2_X(width)			((((width) - 1) & 0xfff) << 16)
+#define SUN4I_TCON1_BASIC2_Y(height)			(((height) - 1) & 0xfff)
+
+#define SUN4I_TCON1_BASIC3_REG			*(volatile uint32_t *)(SUN4I_TCON_BASE + 0xa0)
+#define SUN4I_TCON1_BASIC3_H_TOTAL(total)		((((total) - 1) & 0x1fff) << 16)
+#define SUN4I_TCON1_BASIC3_H_BACKPORCH(bp)		(((bp) - 1) & 0xfff)
+
+#define SUN4I_TCON1_BASIC4_REG			*(volatile uint32_t *)(SUN4I_TCON_BASE + 0xa4)
+#define SUN4I_TCON1_BASIC4_V_TOTAL(total)		(((total) & 0x1fff) << 16)
+#define SUN4I_TCON1_BASIC4_V_BACKPORCH(bp)		(((bp) - 1) & 0xfff)
+
+#define SUN4I_TCON1_BASIC5_REG			*(volatile uint32_t *)(SUN4I_TCON_BASE + 0xa8)
+#define SUN4I_TCON1_BASIC5_H_SYNC(width)		((((width) - 1) & 0x3ff) << 16)
+#define SUN4I_TCON1_BASIC5_V_SYNC(height)		(((height) - 1) & 0x3ff)
+
+#define SUN4I_TCON0_IO_POL_REG			*(volatile uint32_t *)(SUN4I_TCON_BASE + 0x88)
 
 
 // From drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
 
 /* Identification Registers */
-#define HDMI_DESIGN_ID                          0x0000
-#define HDMI_REVISION_ID                        0x0001
-#define HDMI_PRODUCT_ID0                        0x0002
-#define HDMI_PRODUCT_ID1                        0x0003
-#define HDMI_CONFIG0_ID                         0x0004
-#define HDMI_CONFIG1_ID                         0x0005
-#define HDMI_CONFIG2_ID                         0x0006
-#define HDMI_CONFIG3_ID                         0x0007
+#define HDMI_DESIGN_ID                          (HDMI_BASE + 0x0000)
+#define HDMI_REVISION_ID                        (HDMI_BASE + 0x0001)
+#define HDMI_PRODUCT_ID0                        (HDMI_BASE + 0x0002)
+#define HDMI_PRODUCT_ID1                        (HDMI_BASE + 0x0003)
+#define HDMI_CONFIG0_ID                         (HDMI_BASE + 0x0004)
+#define HDMI_CONFIG1_ID                         (HDMI_BASE + 0x0005)
+#define HDMI_CONFIG2_ID                         (HDMI_BASE + 0x0006)
+#define HDMI_CONFIG3_ID                         (HDMI_BASE + 0x0007)
 
 /* Interrupt Registers */
 #define HDMI_IH_FC_STAT0                        0x0100
 #define HDMI_IH_FC_STAT1                        0x0101
 #define HDMI_IH_FC_STAT2                        0x0102
 #define HDMI_IH_AS_STAT0                        0x0103
-#define HDMI_IH_PHY_STAT0                       0x0104
-#define HDMI_IH_I2CM_STAT0                      0x0105
+#define HDMI_IH_PHY_STAT0                       (HDMI_BASE + 0x0104)
+#define HDMI_IH_I2CM_STAT0                      (HDMI_BASE + 0x0105)
 #define HDMI_IH_CEC_STAT0                       0x0106
 #define HDMI_IH_VP_STAT0                        0x0107
 #define HDMI_IH_I2CMPHY_STAT0                   0x0108
 #define HDMI_IH_AHBDMAAUD_STAT0                 0x0109
 
-#define HDMI_IH_MUTE_FC_STAT0                   0x0180
-#define HDMI_IH_MUTE_FC_STAT1                   0x0181
-#define HDMI_IH_MUTE_FC_STAT2                   0x0182
-#define HDMI_IH_MUTE_AS_STAT0                   0x0183
-#define HDMI_IH_MUTE_PHY_STAT0                  0x0184
-#define HDMI_IH_MUTE_I2CM_STAT0                 0x0185
-#define HDMI_IH_MUTE_CEC_STAT0                  0x0186
-#define HDMI_IH_MUTE_VP_STAT0                   0x0187
-#define HDMI_IH_MUTE_I2CMPHY_STAT0              0x0188
-#define HDMI_IH_MUTE_AHBDMAAUD_STAT0            0x0189
-#define HDMI_IH_MUTE                            0x01FF
+#define HDMI_IH_MUTE_FC_STAT0                   (HDMI_BASE + 0x0180)
+#define HDMI_IH_MUTE_FC_STAT1                   (HDMI_BASE + 0x0181)
+#define HDMI_IH_MUTE_FC_STAT2                   (HDMI_BASE + 0x0182)
+#define HDMI_IH_MUTE_AS_STAT0                   (HDMI_BASE + 0x0183)
+#define HDMI_IH_MUTE_PHY_STAT0                  (HDMI_BASE + 0x0184)
+#define HDMI_IH_MUTE_I2CM_STAT0                 (HDMI_BASE + 0x0185)
+#define HDMI_IH_MUTE_CEC_STAT0                  (HDMI_BASE + 0x0186)
+#define HDMI_IH_MUTE_VP_STAT0                   (HDMI_BASE + 0x0187)
+#define HDMI_IH_MUTE_I2CMPHY_STAT0              (HDMI_BASE + 0x0188)
+#define HDMI_IH_MUTE_AHBDMAAUD_STAT0            (HDMI_BASE + 0x0189)
+#define HDMI_IH_MUTE                            (HDMI_BASE + 0x01FF)
 
 /* Video Sample Registers */
 #define HDMI_TX_INVID0                          0x0200
@@ -80,7 +119,7 @@
 #define HDMI_VP_CONF                            0x0804
 #define HDMI_VP_STAT                            0x0805
 #define HDMI_VP_INT                             0x0806
-#define HDMI_VP_MASK                            0x0807
+#define HDMI_VP_MASK                            (HDMI_BASE + 0x0807)
 #define HDMI_VP_POL                             0x0808
 
 /* Frame Composer Registers */
@@ -273,15 +312,15 @@
 #define HDMI_FC_RDRB7                           0x10BF
 #define HDMI_FC_STAT0                           0x10D0
 #define HDMI_FC_INT0                            0x10D1
-#define HDMI_FC_MASK0                           0x10D2
+#define HDMI_FC_MASK0                           (HDMI_BASE + 0x10D2)
 #define HDMI_FC_POL0                            0x10D3
 #define HDMI_FC_STAT1                           0x10D4
 #define HDMI_FC_INT1                            0x10D5
-#define HDMI_FC_MASK1                           0x10D6
+#define HDMI_FC_MASK1                           (HDMI_BASE + 0x10D6)
 #define HDMI_FC_POL1                            0x10D7
 #define HDMI_FC_STAT2                           0x10D8
 #define HDMI_FC_INT2                            0x10D9
-#define HDMI_FC_MASK2                           0x10DA
+#define HDMI_FC_MASK2                           (HDMI_BASE + 0x10DA)
 #define HDMI_FC_POL2                            0x10DB
 #define HDMI_FC_PRCONF                          0x10E0
 #define HDMI_FC_SCRAMBLER_CTRL                  0x10E1
@@ -382,14 +421,14 @@
 #define HDMI_FC_DBGTMDS2                        0x121B
 
 /* HDMI Source PHY Registers */
-#define HDMI_PHY_CONF0                          0x3000
+#define HDMI_PHY_CONF0                          (HDMI_BASE + 0x3000)
 #define HDMI_PHY_TST0                           0x3001
 #define HDMI_PHY_TST1                           0x3002
 #define HDMI_PHY_TST2                           0x3003
 #define HDMI_PHY_STAT0                          0x3004
 #define HDMI_PHY_INT0                           0x3005
-#define HDMI_PHY_MASK0                          0x3006
-#define HDMI_PHY_POL0                           0x3007
+#define HDMI_PHY_MASK0                          (HDMI_BASE + 0x3006)
+#define HDMI_PHY_POL0                           (HDMI_BASE + 0x3007)
 
 /* HDMI Master PHY Registers */
 #define HDMI_PHY_I2CM_SLAVE_ADDR                0x3020
@@ -399,8 +438,8 @@
 #define HDMI_PHY_I2CM_DATAI_1_ADDR              0x3024
 #define HDMI_PHY_I2CM_DATAI_0_ADDR              0x3025
 #define HDMI_PHY_I2CM_OPERATION_ADDR            0x3026
-#define HDMI_PHY_I2CM_INT_ADDR                  0x3027
-#define HDMI_PHY_I2CM_CTLINT_ADDR               0x3028
+#define HDMI_PHY_I2CM_INT_ADDR                  (HDMI_BASE + 0x3027)
+#define HDMI_PHY_I2CM_CTLINT_ADDR               (HDMI_BASE + 0x3028)
 #define HDMI_PHY_I2CM_DIV_ADDR                  0x3029
 #define HDMI_PHY_I2CM_SOFTRSTZ_ADDR             0x302a
 #define HDMI_PHY_I2CM_SS_SCL_HCNT_1_ADDR        0x302b
@@ -415,7 +454,7 @@
 /* Audio Sampler Registers */
 #define HDMI_AUD_CONF0                          0x3100
 #define HDMI_AUD_CONF1                          0x3101
-#define HDMI_AUD_INT                            0x3102
+#define HDMI_AUD_INT                            (HDMI_BASE + 0x3102)
 #define HDMI_AUD_CONF2                          0x3103
 #define HDMI_AUD_N1                             0x3200
 #define HDMI_AUD_N2                             0x3201
@@ -424,12 +463,12 @@
 #define HDMI_AUD_CTS2                           0x3204
 #define HDMI_AUD_CTS3                           0x3205
 #define HDMI_AUD_INPUTCLKFS                     0x3206
-#define HDMI_AUD_SPDIFINT			0x3302
+#define HDMI_AUD_SPDIFINT						(HDMI_BASE + 0x3302)
 #define HDMI_AUD_CONF0_HBR                      0x3400
 #define HDMI_AUD_HBR_STATUS                     0x3401
 #define HDMI_AUD_HBR_INT                        0x3402
 #define HDMI_AUD_HBR_POL                        0x3403
-#define HDMI_AUD_HBR_MASK                       0x3404
+#define HDMI_AUD_HBR_MASK                       (HDMI_BASE + 0x3404)
 
 /*
  * Generic Parallel Audio Interface Registers
@@ -440,75 +479,8 @@
 #define HDMI_GP_CONF2                           0x3502
 #define HDMI_GP_STAT                            0x3503
 #define HDMI_GP_INT                             0x3504
-#define HDMI_GP_MASK                            0x3505
+#define HDMI_GP_MASK                            (HDMI_BASE + 0x3505)
 #define HDMI_GP_POL                             0x3506
-
-/* Audio DMA Registers */
-#define HDMI_AHB_DMA_CONF0                      0x3600
-#define HDMI_AHB_DMA_START                      0x3601
-#define HDMI_AHB_DMA_STOP                       0x3602
-#define HDMI_AHB_DMA_THRSLD                     0x3603
-#define HDMI_AHB_DMA_STRADDR0                   0x3604
-#define HDMI_AHB_DMA_STRADDR1                   0x3605
-#define HDMI_AHB_DMA_STRADDR2                   0x3606
-#define HDMI_AHB_DMA_STRADDR3                   0x3607
-#define HDMI_AHB_DMA_STPADDR0                   0x3608
-#define HDMI_AHB_DMA_STPADDR1                   0x3609
-#define HDMI_AHB_DMA_STPADDR2                   0x360a
-#define HDMI_AHB_DMA_STPADDR3                   0x360b
-#define HDMI_AHB_DMA_BSTADDR0                   0x360c
-#define HDMI_AHB_DMA_BSTADDR1                   0x360d
-#define HDMI_AHB_DMA_BSTADDR2                   0x360e
-#define HDMI_AHB_DMA_BSTADDR3                   0x360f
-#define HDMI_AHB_DMA_MBLENGTH0                  0x3610
-#define HDMI_AHB_DMA_MBLENGTH1                  0x3611
-#define HDMI_AHB_DMA_STAT                       0x3612
-#define HDMI_AHB_DMA_INT                        0x3613
-#define HDMI_AHB_DMA_MASK                       0x3614
-#define HDMI_AHB_DMA_POL                        0x3615
-#define HDMI_AHB_DMA_CONF1                      0x3616
-#define HDMI_AHB_DMA_BUFFSTAT                   0x3617
-#define HDMI_AHB_DMA_BUFFINT                    0x3618
-#define HDMI_AHB_DMA_BUFFMASK                   0x3619
-#define HDMI_AHB_DMA_BUFFPOL                    0x361a
-
-/* Main Controller Registers */
-#define HDMI_MC_SFRDIV                          0x4000
-#define HDMI_MC_CLKDIS                          0x4001
-#define HDMI_MC_SWRSTZ                          0x4002
-#define HDMI_MC_OPCTRL                          0x4003
-#define HDMI_MC_FLOWCTRL                        0x4004
-#define HDMI_MC_PHYRSTZ                         0x4005
-#define HDMI_MC_LOCKONCLOCK                     0x4006
-#define HDMI_MC_HEACPHY_RST                     0x4007
-
-/* Color Space  Converter Registers */
-#define HDMI_CSC_CFG                            0x4100
-#define HDMI_CSC_SCALE                          0x4101
-#define HDMI_CSC_COEF_A1_MSB                    0x4102
-#define HDMI_CSC_COEF_A1_LSB                    0x4103
-#define HDMI_CSC_COEF_A2_MSB                    0x4104
-#define HDMI_CSC_COEF_A2_LSB                    0x4105
-#define HDMI_CSC_COEF_A3_MSB                    0x4106
-#define HDMI_CSC_COEF_A3_LSB                    0x4107
-#define HDMI_CSC_COEF_A4_MSB                    0x4108
-#define HDMI_CSC_COEF_A4_LSB                    0x4109
-#define HDMI_CSC_COEF_B1_MSB                    0x410A
-#define HDMI_CSC_COEF_B1_LSB                    0x410B
-#define HDMI_CSC_COEF_B2_MSB                    0x410C
-#define HDMI_CSC_COEF_B2_LSB                    0x410D
-#define HDMI_CSC_COEF_B3_MSB                    0x410E
-#define HDMI_CSC_COEF_B3_LSB                    0x410F
-#define HDMI_CSC_COEF_B4_MSB                    0x4110
-#define HDMI_CSC_COEF_B4_LSB                    0x4111
-#define HDMI_CSC_COEF_C1_MSB                    0x4112
-#define HDMI_CSC_COEF_C1_LSB                    0x4113
-#define HDMI_CSC_COEF_C2_MSB                    0x4114
-#define HDMI_CSC_COEF_C2_LSB                    0x4115
-#define HDMI_CSC_COEF_C3_MSB                    0x4116
-#define HDMI_CSC_COEF_C3_LSB                    0x4117
-#define HDMI_CSC_COEF_C4_MSB                    0x4118
-#define HDMI_CSC_COEF_C4_LSB                    0x4119
 
 /* HDCP Encryption Engine Registers */
 #define HDMI_A_HDCPCFG0                         0x5000
@@ -519,7 +491,7 @@
 #define HDMI_A_HDCPOBS3                         0x5005
 #define HDMI_A_APIINTCLR                        0x5006
 #define HDMI_A_APIINTSTAT                       0x5007
-#define HDMI_A_APIINTMSK                        0x5008
+#define HDMI_A_APIINTMSK                        (HDMI_BASE + 0x5008)
 #define HDMI_A_VIDPOLCFG                        0x5009
 #define HDMI_A_OESSWCFG                         0x500A
 #define HDMI_A_TIMER1SETUP0                     0x500B
@@ -541,16 +513,16 @@
 #define HDMI_A_SRM_BASE                         0x5020
 
 /* I2C Master Registers (E-DDC) */
-#define HDMI_I2CM_SLAVE                         0x7E00
-#define HDMI_I2CM_ADDRESS                       0x7E01
+#define HDMI_I2CM_SLAVE                         (HDMI_BASE + 0x7E00)
+#define HDMI_I2CM_ADDRESS                       (HDMI_BASE + 0x7E01)
 #define HDMI_I2CM_DATAO                         0x7E02
-#define HDMI_I2CM_DATAI                         0x7E03
-#define HDMI_I2CM_OPERATION                     0x7E04
-#define HDMI_I2CM_INT                           0x7E05
-#define HDMI_I2CM_CTLINT                        0x7E06
-#define HDMI_I2CM_DIV                           0x7E07
+#define HDMI_I2CM_DATAI                         (HDMI_BASE + 0x7E03)
+#define HDMI_I2CM_OPERATION                     (HDMI_BASE + 0x7E04)
+#define HDMI_I2CM_INT                           (HDMI_BASE + 0x7E05)
+#define HDMI_I2CM_CTLINT                        (HDMI_BASE + 0x7E06)
+#define HDMI_I2CM_DIV                           (HDMI_BASE + 0x7E07)
 #define HDMI_I2CM_SEGADDR                       0x7E08
-#define HDMI_I2CM_SOFTRSTZ                      0x7E09
+#define HDMI_I2CM_SOFTRSTZ                      (HDMI_BASE + 0x7E09)
 #define HDMI_I2CM_SEGPTR                        0x7E0A
 #define HDMI_I2CM_SS_SCL_HCNT_1_ADDR            0x7E0B
 #define HDMI_I2CM_SS_SCL_HCNT_0_ADDR            0x7E0C
@@ -1121,72 +1093,6 @@ enum {
 	HDMI_I2CM_CTLINT_ARB_MASK = 0x4,
 };
 
-/*
- * HDMI 3D TX PHY registers
- */
-#define HDMI_3D_TX_PHY_PWRCTRL			0x00
-#define HDMI_3D_TX_PHY_SERDIVCTRL		0x01
-#define HDMI_3D_TX_PHY_SERCKCTRL		0x02
-#define HDMI_3D_TX_PHY_SERCKKILLCTRL		0x03
-#define HDMI_3D_TX_PHY_TXRESCTRL		0x04
-#define HDMI_3D_TX_PHY_CKCALCTRL		0x05
-#define HDMI_3D_TX_PHY_CPCE_CTRL		0x06
-#define HDMI_3D_TX_PHY_TXCLKMEASCTRL		0x07
-#define HDMI_3D_TX_PHY_TXMEASCTRL		0x08
-#define HDMI_3D_TX_PHY_CKSYMTXCTRL		0x09
-#define HDMI_3D_TX_PHY_CMPSEQCTRL		0x0a
-#define HDMI_3D_TX_PHY_CMPPWRCTRL		0x0b
-#define HDMI_3D_TX_PHY_CMPMODECTRL		0x0c
-#define HDMI_3D_TX_PHY_MEASCTRL			0x0d
-#define HDMI_3D_TX_PHY_VLEVCTRL			0x0e
-#define HDMI_3D_TX_PHY_D2ACTRL			0x0f
-#define HDMI_3D_TX_PHY_CURRCTRL			0x10
-#define HDMI_3D_TX_PHY_DRVANACTRL		0x11
-#define HDMI_3D_TX_PHY_PLLMEASCTRL		0x12
-#define HDMI_3D_TX_PHY_PLLPHBYCTRL		0x13
-#define HDMI_3D_TX_PHY_GRP_CTRL			0x14
-#define HDMI_3D_TX_PHY_GMPCTRL			0x15
-#define HDMI_3D_TX_PHY_MPLLMEASCTRL		0x16
-#define HDMI_3D_TX_PHY_MSM_CTRL			0x17
-#define HDMI_3D_TX_PHY_SCRPB_STATUS		0x18
-#define HDMI_3D_TX_PHY_TXTERM			0x19
-#define HDMI_3D_TX_PHY_PTRPT_ENBL		0x1a
-#define HDMI_3D_TX_PHY_PATTERNGEN		0x1b
-#define HDMI_3D_TX_PHY_SDCAP_MODE		0x1c
-#define HDMI_3D_TX_PHY_SCOPEMODE		0x1d
-#define HDMI_3D_TX_PHY_DIGTXMODE		0x1e
-#define HDMI_3D_TX_PHY_STR_STATUS		0x1f
-#define HDMI_3D_TX_PHY_SCOPECNT0		0x20
-#define HDMI_3D_TX_PHY_SCOPECNT1		0x21
-#define HDMI_3D_TX_PHY_SCOPECNT2		0x22
-#define HDMI_3D_TX_PHY_SCOPECNTCLK		0x23
-#define HDMI_3D_TX_PHY_SCOPESAMPLE		0x24
-#define HDMI_3D_TX_PHY_SCOPECNTMSB01		0x25
-#define HDMI_3D_TX_PHY_SCOPECNTMSB2CK		0x26
-
-/* HDMI_3D_TX_PHY_CKCALCTRL values */
-#define HDMI_3D_TX_PHY_CKCALCTRL_OVERRIDE		BIT(15)
-
-/* HDMI_3D_TX_PHY_MSM_CTRL values */
-#define HDMI_3D_TX_PHY_MSM_CTRL_MPLL_PH_SEL_CK		BIT(13)
-#define HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_CLK_REF_MPLL	(0 << 1)
-#define HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_OFF		(1 << 1)
-#define HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_PCLK		(2 << 1)
-#define HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_FB_CLK		(3 << 1)
-#define HDMI_3D_TX_PHY_MSM_CTRL_SCOPE_CK_SEL		BIT(0)
-
-/* HDMI_3D_TX_PHY_PTRPT_ENBL values */
-#define HDMI_3D_TX_PHY_PTRPT_ENBL_OVERRIDE		BIT(15)
-#define HDMI_3D_TX_PHY_PTRPT_ENBL_PG_SKIP_BIT2		BIT(8)
-#define HDMI_3D_TX_PHY_PTRPT_ENBL_PG_SKIP_BIT1		BIT(7)
-#define HDMI_3D_TX_PHY_PTRPT_ENBL_PG_SKIP_BIT0		BIT(6)
-#define HDMI_3D_TX_PHY_PTRPT_ENBL_CK_REF_ENB		BIT(5)
-#define HDMI_3D_TX_PHY_PTRPT_ENBL_RCAL_ENB		BIT(4)
-#define HDMI_3D_TX_PHY_PTRPT_ENBL_TX_CLK_ALIGN_ENB	BIT(3)
-#define HDMI_3D_TX_PHY_PTRPT_ENBL_TX_READY		BIT(2)
-#define HDMI_3D_TX_PHY_PTRPT_ENBL_CKO_WORD_ENB		BIT(1)
-#define HDMI_3D_TX_PHY_PTRPT_ENBL_REFCLK_ENB		BIT(0)
-
 // From drivers/gpu/drm/sun4i/sun8i_dw_hdmi.h
 
 #define SUN8I_HDMI_PHY_DBG_CTRL_REG	0x0000
@@ -1197,7 +1103,7 @@ enum {
 #define SUN8I_HDMI_PHY_DBG_CTRL_ADDR_MASK	GENMASK(23, 16)
 #define SUN8I_HDMI_PHY_DBG_CTRL_ADDR(addr)	(addr << 16)
 
-#define SUN8I_HDMI_PHY_REXT_CTRL_REG	0x0004
+#define SUN8I_HDMI_PHY_REXT_CTRL_REG		(HDMI_PHY_BASE + 0x0004)
 #define SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN	BIT(31)
 
 #define SUN8I_HDMI_PHY_READ_EN_REG	0x0010
@@ -1320,109 +1226,6 @@ enum {
 #define SUN8I_HDMI_PHY_ANA_STS_RCAL_MASK	GENMASK(5, 0)
 
 #define SUN8I_HDMI_PHY_CEC_REG		0x003c
-
-// LCD/TCON
-#define LCD0_BASE 0x01C0C000
-#define LCD0_GCTL             *(volatile uint32_t*)(LCD0_BASE + 0x000)
-#define LCD0_GINT0            *(volatile uint32_t*)(LCD0_BASE + 0x004)
-#define LCD0_GINT1            *(volatile uint32_t*)(LCD0_BASE + 0x008)
-#define LCD0_TCON1_CTL        *(volatile uint32_t*)(LCD0_BASE + 0x090)
-#define LCD0_TCON1_BASIC0     *(volatile uint32_t*)(LCD0_BASE + 0x094)
-#define LCD0_TCON1_BASIC1     *(volatile uint32_t*)(LCD0_BASE + 0x098)
-#define LCD0_TCON1_BASIC2     *(volatile uint32_t*)(LCD0_BASE + 0x09C)
-#define LCD0_TCON1_BASIC3     *(volatile uint32_t*)(LCD0_BASE + 0x0A0)
-#define LCD0_TCON1_BASIC4     *(volatile uint32_t*)(LCD0_BASE + 0x0A4)
-#define LCD0_TCON1_BASIC5     *(volatile uint32_t*)(LCD0_BASE + 0x0A8)
-
-#define LCD1_BASE 0x01C0D000
-#define LCD1_GCTL             *(volatile uint32_t*)(LCD1_BASE + 0x000)
-#define LCD1_GINT0            *(volatile uint32_t*)(LCD1_BASE + 0x004)
-#define LCD1_GINT1            *(volatile uint32_t*)(LCD1_BASE + 0x008)
-#define LCD1_TCON1_CTL        *(volatile uint32_t*)(LCD1_BASE + 0x090)
-#define LCD1_TCON1_BASIC0     *(volatile uint32_t*)(LCD1_BASE + 0x094)
-#define LCD1_TCON1_BASIC1     *(volatile uint32_t*)(LCD1_BASE + 0x098)
-#define LCD1_TCON1_BASIC2     *(volatile uint32_t*)(LCD1_BASE + 0x09C)
-#define LCD1_TCON1_BASIC3     *(volatile uint32_t*)(LCD1_BASE + 0x0A0)
-#define LCD1_TCON1_BASIC4     *(volatile uint32_t*)(LCD1_BASE + 0x0A4)
-#define LCD1_TCON1_BASIC5     *(volatile uint32_t*)(LCD1_BASE + 0x0A8)
-
-// DE2
-#define DE_BASE 0x01000000
-#define DE_SCLK_GATE                  *(volatile uint32_t*)(DE_BASE + 0x000)
-#define DE_HCLK_GATE                  *(volatile uint32_t*)(DE_BASE + 0x004)
-#define DE_AHB_RESET                  *(volatile uint32_t*)(DE_BASE + 0x008)
-#define DE_SCLK_DIV                   *(volatile uint32_t*)(DE_BASE + 0x00C)
-#define DE_DE2TCON_MUX                *(volatile uint32_t*)(DE_BASE + 0x010)
-
-// Mixer 0
-#define DE_MIXER0                     (DE_BASE + 0x100000)
-#define DE_MIXER0_GLB                 (DE_MIXER0 + 0x0)
-#define DE_MIXER0_GLB_CTL             *(volatile uint32_t*)(DE_MIXER0_GLB + 0x000)
-#define DE_MIXER0_GLB_STS             *(volatile uint32_t*)(DE_MIXER0_GLB + 0x004)
-#define DE_MIXER0_GLB_DBUFFER         *(volatile uint32_t*)(DE_MIXER0_GLB + 0x008)
-#define DE_MIXER0_GLB_SIZE            *(volatile uint32_t*)(DE_MIXER0_GLB + 0x00C)
-
-#define DE_MIXER0_BLD                 (DE_MIXER0 + 0x1000)
-#define DE_MIXER0_BLD_FILL_COLOR_CTL  *(volatile uint32_t*)(DE_MIXER0_BLD + 0x000)
-#define DE_MIXER0_BLD_FILL_COLOR(x)   *(volatile uint32_t*)(DE_MIXER0_BLD + 0x004 + x * 0x10)
-#define DE_MIXER0_BLD_CH_ISIZE(x)     *(volatile uint32_t*)(DE_MIXER0_BLD + 0x008 + x * 0x10)
-#define DE_MIXER0_BLD_CH_OFFSET(x)    *(volatile uint32_t*)(DE_MIXER0_BLD + 0x00C + x * 0x10)
-#define DE_MIXER0_BLD_CH_RTCTL        *(volatile uint32_t*)(DE_MIXER0_BLD + 0x080)
-#define DE_MIXER0_BLD_PREMUL_CTL      *(volatile uint32_t*)(DE_MIXER0_BLD + 0x084)
-#define DE_MIXER0_BLD_BK_COLOR        *(volatile uint32_t*)(DE_MIXER0_BLD + 0x088)
-#define DE_MIXER0_BLD_SIZE            *(volatile uint32_t*)(DE_MIXER0_BLD + 0x08C)
-#define DE_MIXER0_BLD_CTL(x)          *(volatile uint32_t*)(DE_MIXER0_BLD + 0x090 + x * 0x4)
-#define DE_MIXER0_BLD_KEY_CTL         *(volatile uint32_t*)(DE_MIXER0_BLD + 0x0B0)
-#define DE_MIXER0_BLD_KEY_CON         *(volatile uint32_t*)(DE_MIXER0_BLD + 0x0B4)
-#define DE_MIXER0_BLD_KEY_MAX(x)      *(volatile uint32_t*)(DE_MIXER0_BLD + 0x0C0 + x * 0x4)
-#define DE_MIXER0_BLD_KEY_MIN(x)      *(volatile uint32_t*)(DE_MIXER0_BLD + 0x0E0 + x * 0x4)
-#define DE_MIXER0_BLD_OUT_COLOR       *(volatile uint32_t*)(DE_MIXER0_BLD + 0x0FC)
-
-#define DE_MIXER0_OVL_V               (DE_MIXER0 + 0x2000)
-#define DE_MIXER0_OVL_V_ATTCTL(x)     *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0x00 + x * 0x30)
-#define DE_MIXER0_OVL_V_MBSIZE(x)     *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0x04 + x * 0x30)
-#define DE_MIXER0_OVL_V_COOR(x)       *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0x08 + x * 0x30)
-#define DE_MIXER0_OVL_V_PITCH0(x)     *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0x0C + x * 0x30)
-#define DE_MIXER0_OVL_V_PITCH1(x)     *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0x10 + x * 0x30)
-#define DE_MIXER0_OVL_V_PITCH2(x)     *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0x14 + x * 0x30)
-#define DE_MIXER0_OVL_V_TOP_LADD0(x)  *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0x18 + x * 0x30)
-#define DE_MIXER0_OVL_V_TOP_LADD1(x)  *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0x1C + x * 0x30)
-#define DE_MIXER0_OVL_V_TOP_LADD2(x)  *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0x20 + x * 0x30)
-#define DE_MIXER0_OVL_V_BOT_LADD0(x)  *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0x24 + x * 0x30)
-#define DE_MIXER0_OVL_V_BOT_LADD1(x)  *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0x28 + x * 0x30)
-#define DE_MIXER0_OVL_V_BOT_LADD2(x)  *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0x2C + x * 0x30)
-#define DE_MIXER0_OVL_V_FILL_COLOR(x) *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0xC0 + x * 0x4)
-#define DE_MIXER0_OVL_V_TOP_HADD0     *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0xD0)
-#define DE_MIXER0_OVL_V_TOP_HADD1     *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0xD4)
-#define DE_MIXER0_OVL_V_TOP_HADD2     *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0xD8)
-#define DE_MIXER0_OVL_V_BOT_HADD0     *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0xDC)
-#define DE_MIXER0_OVL_V_BOT_HADD1     *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0xE0)
-#define DE_MIXER0_OVL_V_BOT_HADD2     *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0xE4)
-#define DE_MIXER0_OVL_V_SIZE          *(volatile uint32_t*)(DE_MIXER0_OVL_V + 0xE8)
-
-#define DE_MIXER0_VS_BASE             (DE_MIXER0 + 0x20000)
-#define DE_MIXER0_VS_CTRL             *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x00)
-#define DE_MIXER0_VS_STATUS           *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x08)
-#define DE_MIXER0_VS_FIELD_CTRL       *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x0C)
-#define DE_MIXER0_VS_OUT_SIZE         *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x40)
-#define DE_MIXER0_VS_Y_SIZE           *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x80)
-#define DE_MIXER0_VS_Y_HSTEP          *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x88)
-#define DE_MIXER0_VS_Y_VSTEP          *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x8C)
-#define DE_MIXER0_VS_Y_HPHASE         *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x90)
-#define DE_MIXER0_VS_Y_VPHASE0        *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x98)
-#define DE_MIXER0_VS_Y_VPHASE1        *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x9C)
-#define DE_MIXER0_VS_C_SIZE           *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0xC0)
-#define DE_MIXER0_VS_C_HSTEP          *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0xC8)
-#define DE_MIXER0_VS_C_VSTEP          *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0xCC)
-#define DE_MIXER0_VS_C_HPHASE         *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0xD0)
-#define DE_MIXER0_VS_C_VPHASE0        *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0xD8)
-#define DE_MIXER0_VS_C_VPHASE1        *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0xDC)
-#define DE_MIXER0_VS_Y_HCOEF0(x)      *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x200 + x * 4)
-#define DE_MIXER0_VS_Y_HCOEF1(x)      *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x300 + x * 4)
-#define DE_MIXER0_VS_Y_VCOEF(x)       *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x400 + x * 4)
-#define DE_MIXER0_VS_C_HCOEF0(x)      *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x600 + x * 4)
-#define DE_MIXER0_VS_C_HCOEF1(x)      *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x700 + x * 4)
-#define DE_MIXER0_VS_C_VCOEF(x)       *(volatile uint32_t*)(DE_MIXER0_VS_BASE + 0x800 + x * 4)
 
 void display_init();
 void buffer_swap();
