@@ -101,6 +101,61 @@ interface for the kernel to create framebuffers, this is
 
 Various CRTC helper functions are defined here for the kernel to call.
 
+## Clocks
+
+```
+We must set the "tmds" <&ccu CLK_HDMI> to the pixelclock (108MHz)
+static const char * const hdmi_parents[] = { "pll-video0", "pll-video0-4x",
+				     "pll-video2", "pll-video2-4x" };
+static SUNXI_CCU_M_WITH_MUX_GATE(hdmi_clk, "hdmi", hdmi_parents, 0xb00,
+                0, 4,		/* M */
+                24, 2,		/* mux */
+                BIT(31),	/* gate */
+                0);
+These clock registers have the following implementation:
+N or Factor N is a multiplying factor. There is no N on this clock.
+M or Factor M is a dividing factor. Here bits 3:0 are M.
+Bits 25:24 are a mux, between four parent clocks. PLL_VIDEO0(1X), PLL_VIDEO0(4X), PLL_VIDEO2(1X), PLL_VIDEO2(4X)
+
+The ccu_div_ops struct defines the following functions:
+
+const struct clk_ops ccu_div_ops = {
+	.disable	= ccu_div_disable,
+	.enable		= ccu_div_enable,
+	.is_enabled	= ccu_div_is_enabled,
+
+	.get_parent	= ccu_div_get_parent,
+	.set_parent	= ccu_div_set_parent,
+
+	.determine_rate	= ccu_div_determine_rate,
+	.recalc_rate	= ccu_div_recalc_rate,
+	.set_rate	= ccu_div_set_rate,
+};
+
+An nm clock defines the following functions:
+
+const struct clk_ops ccu_nm_ops = {
+	.disable	= ccu_nm_disable,
+	.enable		= ccu_nm_enable,
+	.is_enabled	= ccu_nm_is_enabled,
+
+	.recalc_rate	= ccu_nm_recalc_rate,
+	.round_rate	= ccu_nm_round_rate,
+	.set_rate	= ccu_nm_set_rate,
+};
+
+In the Linux clk framework the following calls are made:
+
+determine_rate - This gives the driver the opportunity to change the rate. In a
+div(mux) clk 
+
+
+```
+
+## Debugging clocks
+
+If you set a breakpoint on `clk_set_rate` there will be an opaque clk as param0.
+To see what this clock is, print `clk->core->hw`. This will show the actual clock.
 
 ## Old guff
 

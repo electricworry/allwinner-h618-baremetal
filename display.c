@@ -689,6 +689,20 @@ void display_configure(void) {
         // END sun4i_tcon_channel_set_status
     // END sun4i_tcon_set_status - enable
 
+    // We must set the "tmds" <&ccu CLK_HDMI> to the pixelclock (108MHz)
+    // static const char * const hdmi_parents[] = { "pll-video0", "pll-video0-4x",
+	// 				     "pll-video2", "pll-video2-4x" };
+    // static SUNXI_CCU_M_WITH_MUX_GATE(hdmi_clk, "hdmi", hdmi_parents, 0xb00,
+    //                 0, 4,		/* M */
+    //                 24, 2,		/* mux */
+    //                 BIT(31),	/* gate */
+    //                 0);
+    // These clock registers have the following implementation:
+    // M or Factor M is a dividing factor. Here bits 3:0 are M.
+    // Bits 25:24 are a mux, between four parent clocks. PLL_VIDEO0(1X), PLL_VIDEO0(4X), PLL_VIDEO2(1X), PLL_VIDEO2(4X)
+
+
+
     // START dw_hdmi_bridge_atomic_enable
         // START dw_hdmi_update_power
             // START dw_hdmi_poweron
