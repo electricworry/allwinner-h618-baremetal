@@ -370,24 +370,36 @@ void display_configure(void) {
     /* END TCON_TV allwinner,sun8i-r40-tcon-tv drivers/gpu/drm/sun4i/sun4i_tcon.c:sun4i_tcon_bind() */
 
     /* START HDMI allwinner,sun50i-h6-dw-hdmi drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_bind() */
+    // QUIRKS: use_drm_infoframe, .mode_valid = sun8i_dw_hdmi_mode_valid_h6
+    // encoder->possible_crtcs = sun8i_dw_hdmi_find_possible_crtcs(drm, dev->of_node);
     // Ignore the regulator. Not defined in DT so dummy.
-    SUN50I_H616_CCU_HDMI_BGR_REG |= (1<<16); // De-assert reset of RST_BUS_HDMI aka rst_ctrl
-    SUN50I_H616_CCU_PLL_VIDEO0_REG |= (1 << 31); // Enable parent PLL pll-video0
-    SUN50I_H616_CCU_HDMI0_CLK_REG |= (1 << 31); // Enable clock CLK_HDMI aka tmds
+    // De-assert [E]ctrl(<&ccu RST_BUS_HDMI>)
+    SUN50I_H616_CCU_HDMI_BGR_REG   |= BIT(16);
+    // [E]tmds(<&ccu CLK_HDMI>) enable aka hdmi
+    // Parents: [I]pll-video0
+    SUN50I_H616_CCU_PLL_VIDEO0_REG |= BIT(31);
+    SUN50I_H616_CCU_HDMI0_CLK_REG  |= BIT(31);
 
-        // START PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun8i_hdmi_phy_init()
-            SUN50I_H616_CCU_HDMI_BGR_REG |= (1 << 17); // De-assert reset of RST_BUS_HDMI_SUB
-            SUN50I_H616_CCU_HDMI_BGR_REG |= (1 << 0); // Enable clock CLK_BUS_HDMI
-            SUN50I_H616_CCU_HDMI0_SLOW_CLK_REG |= (1 << 31); // CLK_HDMI_SLOW
-                // START PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun50i_hdmi_phy_init_h6()
-                updatel(SUN8I_HDMI_PHY_REXT_CTRL_REG,
-                        SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN,
-                        SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN);
-                updatel(SUN8I_HDMI_PHY_REXT_CTRL_REG,
-                        0xffff0000, 0x80c00000);
-                // END PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun50i_hdmi_phy_init_h6()
-        // END PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun8i_hdmi_phy_init()
+        /* START PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun8i_hdmi_phy_init() */
+        // De-assert [E]phy(<&ccu RST_BUS_HDMI_SUB>)
+        SUN50I_H616_CCU_HDMI_BGR_REG |= BIT(17);
+        // [E]bus(<&ccu CLK_BUS_HDMI>) enable aka bus-hdmi
+        SUN50I_H616_CCU_HDMI_BGR_REG |= BIT(0);
+        // [E]mod(<&ccu CLK_HDMI_SLOW>) enable aka hdmi-slow
+        SUN50I_H616_CCU_HDMI0_SLOW_CLK_REG |= BIT(31);
+            /* START PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun50i_hdmi_phy_init_h6() */
+            updatel(SUN8I_HDMI_PHY_REXT_CTRL_REG,
+                    SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN,
+                    SUN8I_HDMI_PHY_REXT_CTRL_REXT_EN);
+            updatel(SUN8I_HDMI_PHY_REXT_CTRL_REG,
+                    0xffff0000, 0x80c00000);
+            /* END PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun50i_hdmi_phy_init_h6() */
+        /* END PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun8i_hdmi_phy_init() */
 
+    /* At the end of sun8i_dw_hdmi_bind(), we call into dw_hdmi_bind() */
+    /* END HDMI allwinner,sun50i-h6-dw-hdmi drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_bind() */
+
+    // HERE
         // START HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_bind()
             // START HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_probe()
             phy_mask = (uint8_t) ~(HDMI_PHY_HPD | HDMI_PHY_RX_SENSE);
@@ -502,7 +514,6 @@ void display_configure(void) {
 
             // END HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_probe()
         // END HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_bind()
-    /* END HDMI allwinner,sun50i-h6-dw-hdmi drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_bind() */
 
     /* At this point we're back in sun4i_drv_bind(). The component_bind_all()
        has just completed and the DE continutes setup. */
