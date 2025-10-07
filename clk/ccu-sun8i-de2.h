@@ -40,7 +40,7 @@
 #define SUN50I_MIXER_GLOBAL_CLK      *(volatile uint32_t *)(DE33_MIXER_TOP_REGS_BASE + 0x000c)
 
 #define DE33_MIXER_DISP_REGS_BASE    (DE_BASE + 0x280000)
-#define DE2_BLD_BASE 0x1000
+#define DE2_BLD_BASE 0x1000 /* Blender Base */
 #define SUN50I_FMT_DE33 0x5000
 #define SUN8I_MIXER_BLEND_PIPE_CTL          *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x0)
 #define SUN8I_MIXER_BLEND_ATTR_FCOLOR(x)	*(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x04 + 0x10 * (x))
