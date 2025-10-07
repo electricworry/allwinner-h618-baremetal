@@ -26,6 +26,7 @@
 
 #define SUN4I_TCON_BASE         0x06515000 // allwinner,sun8i-r40-tcon-tv
 #define SUN4I_TCON_GCTL_REG       *(volatile uint32_t *)(SUN4I_TCON_BASE + 0x00)
+#define SUN4I_TCON_GCTL_PAD_SEL				BIT(1)
 #define SUN4I_TCON_GCTL_TCON_ENABLE			BIT(31)
 #define SUN4I_TCON_GCTL_IOMAP_MASK			BIT(0)
 #define SUN4I_TCON_GCTL_IOMAP_TCON1			(1 << 0)

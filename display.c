@@ -316,10 +316,10 @@ void display_configure(void) {
     /* END MIXER allwinner,sun50i-h616-de33-mixer-0 linux/drivers/gpu/drm/sun4i/sun8i_mixer.c:sun8i_mixer_bind() */
 
     /* START TCON_TOP allwinner,sun50i-h6-tcon-top drivers/gpu/drm/sun4i/sun8i_tcon_top.c:sun8i_tcon_top_bind() */
-    SUN50I_H616_CCU_DISPLAY_IF_TOP_BGR_REG |= (1 << 16); // De-assert RST_BUS_TCON_TOP
-    SUN50I_H616_CCU_DISPLAY_IF_TOP_BGR_REG |= (1 << 0); // Enable CLK_BUS_TCON_TOP: Parents: ahb3
-    // ahb3 has no gate. Parents: osc24M osc32k psi-ahb1-ahb2 pll-periph0
-    // psi-ahb1-ahb2 has no gate. Parents: osc24M osc32k iosc pll-periph0
+    // De-assert [E]<&ccu RST_BUS_TCON_TOP>
+    SUN50I_H616_CCU_DISPLAY_IF_TOP_BGR_REG |= BIT(16);
+    // [E]bus(<&ccu CLK_BUS_TCON_TOP>) enable aka bus-tcon-top
+    SUN50I_H616_CCU_DISPLAY_IF_TOP_BGR_REG |= BIT(0);
     /*
     * At least on H6, some registers have some bits set by default
     * which may cause issues. Clear them here.
@@ -339,13 +339,14 @@ void display_configure(void) {
     /* END TCON_TOP allwinner,sun50i-h6-tcon-top drivers/gpu/drm/sun4i/sun8i_tcon_top.c:sun8i_tcon_top_bind() */
 
     /* START TCON_TV allwinner,sun8i-r40-tcon-tv drivers/gpu/drm/sun4i/sun4i_tcon.c:sun4i_tcon_bind() */
-    // sun8i_r40_tv_quirks: has_channel_1, polarity_in_ch0, .set_mux = sun8i_r40_tcon_tv_set_mux
-    SUN50I_H616_CCU_TCON_TV_BGR_REG |= (1 << 16); // De-assert reset lcd (RST_BUS_TCON_TV0)
+    // QUIRKS: has_channel_1, polarity_in_ch0, .set_mux = sun8i_r40_tcon_tv_set_mux
+    // De-assert [E]lcd(<&ccu RST_BUS_TCON_TV0>)
+    SUN50I_H616_CCU_TCON_TV_BGR_REG |= BIT(16);
     // can_lvds = false;
 
         // START sun4i_tcon_init_clocks()
-        SUN50I_H616_CCU_TCON_TV_BGR_REG |= (1 << 0); // Enable clk ahb (CLK_BUS_TCON_TV0)
-        // We just get tcon-ch1, no enable yet
+        // [E]ahb(<&ccu CLK_BUS_TCON_TV0>) enable aka bus-tcon-tv0
+        SUN50I_H616_CCU_TCON_TV_BGR_REG |= BIT(0);
         // END sun4i_tcon_init_clocks()
 
         // START sun4i_tcon_init_regmap()
@@ -358,14 +359,14 @@ void display_configure(void) {
         SUN4I_TCON1_IO_TRI_REG = ~0;
         // END sun4i_tcon_init_regmap()
 
-    // TODO skip IRQ
+        // TODO? sun4i_tcon_init_irq() - I've skipped IRQ
 
         // START sun4i_crtc_init()
         // This creates and initialises the CRTC.
-        // TODO: This initialises layers (see mixer) and that is important
+        // TODO! This initialises layers (see mixer) and is critical
         // END sun4i_crtc_init()
 
-    SUN4I_TCON_GCTL_REG |= (1 << 1);
+    SUN4I_TCON_GCTL_REG |= SUN4I_TCON_GCTL_PAD_SEL;
     /* END TCON_TV allwinner,sun8i-r40-tcon-tv drivers/gpu/drm/sun4i/sun4i_tcon.c:sun4i_tcon_bind() */
 
     /* START HDMI allwinner,sun50i-h6-dw-hdmi drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_bind() */
