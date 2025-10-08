@@ -369,6 +369,9 @@ void display_configure(void) {
     SUN4I_TCON_GCTL_REG |= SUN4I_TCON_GCTL_PAD_SEL;
     /* END TCON_TV allwinner,sun8i-r40-tcon-tv drivers/gpu/drm/sun4i/sun4i_tcon.c:sun4i_tcon_bind() */
 
+    /* At the end of sun8i_dw_hdmi_bind(), we call into dw_hdmi_bind() / dw_hdmi_probe */
+    /* END HDMI allwinner,sun50i-h6-dw-hdmi drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_bind() */
+
     /* START HDMI allwinner,sun50i-h6-dw-hdmi drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_bind() */
     // QUIRKS: use_drm_infoframe, .mode_valid = sun8i_dw_hdmi_mode_valid_h6
     // encoder->possible_crtcs = sun8i_dw_hdmi_find_possible_crtcs(drm, dev->of_node);
@@ -379,7 +382,6 @@ void display_configure(void) {
     // Parents: [I]pll-video0
     SUN50I_H616_CCU_PLL_VIDEO0_REG |= BIT(31);
     SUN50I_H616_CCU_HDMI0_CLK_REG  |= BIT(31);
-
         /* START PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun8i_hdmi_phy_init() */
         // De-assert [E]phy(<&ccu RST_BUS_HDMI_SUB>)
         SUN50I_H616_CCU_HDMI_BGR_REG |= BIT(17);
@@ -396,16 +398,13 @@ void display_configure(void) {
             /* END PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun50i_hdmi_phy_init_h6() */
         /* END PHY drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c sun8i_hdmi_phy_init() */
 
-    /* At the end of sun8i_dw_hdmi_bind(), we call into dw_hdmi_bind() */
-    /* END HDMI allwinner,sun50i-h6-dw-hdmi drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_bind() */
-
-    // HERE
-        // START HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_bind()
-            // START HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_probe()
+        /* START HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_bind() */
+            /* START HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_probe() */
             phy_mask = (uint8_t) ~(HDMI_PHY_HPD | HDMI_PHY_RX_SENSE);
-            // Enable clock isfr
-            // Enable clock iahb
-            SUN50I_H616_CCU_HDMI_CEC_CLK_REG |= (1 << 31) | (1 << 30); // Enable CLK_HDMI_CEC aka cec
+            // [E]isfr(<&ccu CLK_HDMI_SLOW>) enable: already done
+            // [E]iahb(<&ccu CLK_BUS_HDMI>) enable: already done
+            // [E]cec(<&ccu CLK_HDMI_CEC>) enable aka hdmi-cec
+            SUN50I_H616_CCU_HDMI_CEC_CLK_REG |= BIT(31) | BIT(30);
             // Get DesignWare version
             uint16_t version = readb(HDMI_DESIGN_ID) << 8 | readb(HDMI_REVISION_ID);
             uint8_t id0 = readb(HDMI_PRODUCT_ID0); // HDMI_PRODUCT_ID0_HDMI_TX
@@ -415,9 +414,7 @@ void display_configure(void) {
                 printf("HDMI_CONFIG2_ID: %x\n", config_id2);
                 // END dw_hdmi_detect_phy()
             printf("HDMI Version: %x ID: %x %x\n", version, id0, id1);
-
-                // START dw_hdmi_init_hw()
-
+                /* START dw_hdmi_init_hw() */
                     // START initialize_hdmi_ih_mutes()
                     uint8_t ih_mute;
                     /*
@@ -462,7 +459,6 @@ void display_configure(void) {
                             HDMI_IH_MUTE_MUTE_ALL_INTERRUPT);
                     writeb(ih_mute, HDMI_IH_MUTE);
                     // END initialize_hdmi_ih_mutes()
-
                     // START dw_hdmi_i2c_init()
                     writeb(HDMI_PHY_I2CM_INT_ADDR_DONE_POL,
                             HDMI_PHY_I2CM_INT_ADDR);
@@ -484,56 +480,29 @@ void display_configure(void) {
                     writeb(HDMI_IH_I2CM_STAT0_ERROR | HDMI_IH_I2CM_STAT0_DONE,
                             HDMI_IH_MUTE_I2CM_STAT0);
                     // END dw_hdmi_i2c_init()
-
-                    // START dw_hdmi_phy_setup_hpd()
-                    // TODO: I disabled this; I'm not interested in hotplug events
-                    // /*
-                    // * Configure the PHY RX SENSE and HPD interrupts polarities and clear
-                    // * any pending interrupt.
-                    // */
-                    // writeb(HDMI_PHY_HPD | HDMI_PHY_RX_SENSE, HDMI_PHY_POL0);
-                    // writeb(HDMI_IH_PHY_STAT0_HPD | HDMI_IH_PHY_STAT0_RX_SENSE,
-                    //         HDMI_IH_PHY_STAT0);
-                    // /* Enable cable hot plug irq. */
-                    // writeb(phy_mask, HDMI_PHY_MASK0);
-                    /* Clear interrupts. */
-                    // writeb(HDMI_IH_PHY_STAT0_HPD | HDMI_IH_PHY_STAT0_RX_SENSE,
-                    //         HDMI_IH_PHY_STAT0);
-                    // /* Unmute interrupts. */
-                    // writeb(~(HDMI_IH_PHY_STAT0_HPD | HDMI_IH_PHY_STAT0_RX_SENSE),
-                    //         HDMI_IH_MUTE_PHY_STAT0);
-                    // END dw_hdmi_phy_setup_hpd()
-
-                // END dw_hdmi_init_hw()
-
-            // We're back in dw_hdmi_probe()!
-            // TODO Skipping IRQ setup - Although in this, dw_hdmi_update_power is called.
-            // SKIP hdmi_init_clk_regenerator() - It called hdmi_set_clk_regenerator() and hdmi_set_cts_n() but had no effect in my testing. It's just audio stuff?
-
-            // Further setup skipped. 2 registers are read to configure the driver capabilities. I don't think we care.
-
-            // END HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_probe()
-        // END HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_bind()
+                    /* SKIP dw_hdmi_phy_setup_hpd() - TODO I'm not interested in hotplug events? */
+                /* END dw_hdmi_init_hw() */
+            /* TODO Skipping IRQ setup - Although in this, dw_hdmi_update_power is called. */
+            /* SKIP hdmi_init_clk_regenerator() - TODO It called hdmi_set_clk_regenerator() and hdmi_set_cts_n() but had no effect in my testing. It's just audio stuff? */
+            /* SKIP Further setup skipped. 2 registers are read to configure the driver capabilities. I don't think we care. */
+            /* END HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_probe() */
+        /* SKIP drm_bridge_add() call causes calls into dw_hdmi_bridge_attach()/dw_hdmi_connector_create() */
+        /* END HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_bind() */
+    /* END HDMI allwinner,sun50i-h6-dw-hdmi drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_bind() */
 
     /* At this point we're back in sun4i_drv_bind(). The component_bind_all()
        has just completed and the DE continutes setup. */
 
-    // drm_vblank_init() - IGNORE
-
-    // aperture_remove_all_conflicting_devices() - IGNORE
-
+    // drm_vblank_init() - Nothing interesting
+    // aperture_remove_all_conflicting_devices() - Nothing interesting
     // sun4i_framebuffer_init - This just adds FPs/helpers to the drm_device.
-
     // drm_kms_helper_poll_init - Output polling / hot plug detection
-
     // drm_dev_register - Registers the device
 
     /* The last thing sun4i_drv_bind() does is call drm_client_setup(). This is
        a generic kernel function, so we are only really interested in the sunxi
        functions that it calls into...
     */
-
-    // dw_hdmi_phy_read_hpd() called to check if connector connected
 
     // BEGIN dw_hdmi_connector_get_modes()
         // BEGIN dw_hdmi_edid_read()/dw_hdmi_i2c_xfer()
@@ -565,6 +534,37 @@ void display_configure(void) {
         // END dw_hdmi_edid_read()/dw_hdmi_i2c_xfer()
     // END dw_hdmi_connector_get_modes()
     
+    // drm_client_setup
+        // drm_fbdev_client_setup
+            // drm_client_register
+                // drm_fbdev_client_hotplug
+                    // drm_fb_helper_initial_config
+                        // __drm_fb_helper_initial_config_and_unlock <-- happens here
+                            //drm_client_modeset_probe
+                                // drm_helper_probe_single_connector_modes <-- gets display modes. Also adds 1024x768 if no edid! And a cmdline mode if specified
+                                // __drm_helper_update_and_validate - Validates modes against the connector (e.g. is interlace allowed?)
+                            // drm_fb_helper_single_fb_probe - Not interesting?
+                            // drm_setup_crtcs_fb - Nothing interesting
+                            // register_framebuffer/do_register_framebuffer
+                                // fb_device_create()    ????
+                                // Allocate pixmap       ????
+                                // fb_var_to_videomode() ????
+                                // fb_add_videomode()    ????
+                                // fbcon_fb_registered()/do_fb_registered() (BOOM!)
+                                    // do_fbcon_takeover()
+                                        // do_take_over_console
+                                            //do_bind_con_driver
+                                                // visual_init
+                                                    // con_init(fbcon_init)
+                                                        //...
+                                                        // drm_client_modeset_commit_atomic - SETS UP PLANES AND MODESET <-- suggest debug from here!
+                                                            // drm_atomic_commit BOOM!
+                                        
+
+
+
+
+
     // BEGIN sun4i_tcon_mode_set()
     // DRM_MODE_ENCODER_TMDS
         // BEGIN sun4i_tcon1_mode_set(tcon, mode);
