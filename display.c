@@ -560,10 +560,27 @@ void display_configure(void) {
                                                         // drm_client_modeset_commit_atomic - SETS UP PLANES AND MODESET <-- suggest debug from here!
                                                             // drm_atomic_commit BOOM!
                                         
-
-
-
-
+    /* START drm_atomic_commit() */
+        // sun4i_de_atomic_check
+            // drm_atomic_helper_check_modeset
+                // dw_hdmi_connector_atomic_check
+                // mode_fixup
+                    // drm_atomic_bridge_chain_check
+                        // drm_atomic_bridge_chain_select_bus_fmts
+                            // dw_hdmi_bridge_atomic_get_output_bus_fmts - Decides on the fmt
+                            // dw_hdmi_bridge_atomic_get_input_bus_fmts  - Decides on the fmt
+            // drm_atomic_helper_check_planes
+                // sun4i_crtc_atomic_check
+        // So far so uninteresting...
+        /* drm_atomic_helper_commit - Things rapidly go batshit here. Here's the callstack:
+#0  sun4i_crtc_mode_set_nofb (crtc=0xffff0000c0967080) at drivers/gpu/drm/sun4i/sun4i_crtc.c:143
+#1  0xffff800080a77ebc in crtc_set_mode (dev=dev@entry=0xffff0000c0966000, state=state@entry=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1398
+#2  0xffff800080a7ba34 in drm_atomic_helper_commit_modeset_disables (dev=0xffff0000c0966000, state=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1461
+#3  drm_atomic_helper_commit_tail_rpm (state=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1816
+#4  0xffff800080a7bf90 in commit_tail (state=state@entry=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1871
+#5  0xffff800080a7d20c in drm_atomic_helper_commit (dev=0xffff0000c0966000, state=0xffff0000c1079d00, nonblock=false) at drivers/gpu/drm/drm_atomic_helper.c:2111
+        */
+       
 
     // BEGIN sun4i_tcon_mode_set()
     // DRM_MODE_ENCODER_TMDS
