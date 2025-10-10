@@ -78,6 +78,60 @@
 #define HDMI_CONFIG2_ID                         (HDMI_BASE + 0x0006)
 #define HDMI_CONFIG3_ID                         (HDMI_BASE + 0x0007)
 
+/* HDMI_3D_TX_PHY_CKCALCTRL values */
+#define HDMI_3D_TX_PHY_CKCALCTRL_OVERRIDE		BIT(15)
+
+/* HDMI_3D_TX_PHY_MSM_CTRL values */
+#define HDMI_3D_TX_PHY_MSM_CTRL_MPLL_PH_SEL_CK		BIT(13)
+#define HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_CLK_REF_MPLL	(0 << 1)
+#define HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_OFF		(1 << 1)
+#define HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_PCLK		(2 << 1)
+#define HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_FB_CLK		(3 << 1)
+#define HDMI_3D_TX_PHY_MSM_CTRL_SCOPE_CK_SEL		BIT(0)
+
+/*
+ * HDMI 3D TX PHY registers
+ */
+#define HDMI_3D_TX_PHY_PWRCTRL			0x00
+#define HDMI_3D_TX_PHY_SERDIVCTRL		0x01
+#define HDMI_3D_TX_PHY_SERCKCTRL		0x02
+#define HDMI_3D_TX_PHY_SERCKKILLCTRL		0x03
+#define HDMI_3D_TX_PHY_TXRESCTRL		0x04
+#define HDMI_3D_TX_PHY_CKCALCTRL		0x05
+#define HDMI_3D_TX_PHY_CPCE_CTRL		0x06
+#define HDMI_3D_TX_PHY_TXCLKMEASCTRL		0x07
+#define HDMI_3D_TX_PHY_TXMEASCTRL		0x08
+#define HDMI_3D_TX_PHY_CKSYMTXCTRL		0x09
+#define HDMI_3D_TX_PHY_CMPSEQCTRL		0x0a
+#define HDMI_3D_TX_PHY_CMPPWRCTRL		0x0b
+#define HDMI_3D_TX_PHY_CMPMODECTRL		0x0c
+#define HDMI_3D_TX_PHY_MEASCTRL			0x0d
+#define HDMI_3D_TX_PHY_VLEVCTRL			0x0e
+#define HDMI_3D_TX_PHY_D2ACTRL			0x0f
+#define HDMI_3D_TX_PHY_CURRCTRL			0x10
+#define HDMI_3D_TX_PHY_DRVANACTRL		0x11
+#define HDMI_3D_TX_PHY_PLLMEASCTRL		0x12
+#define HDMI_3D_TX_PHY_PLLPHBYCTRL		0x13
+#define HDMI_3D_TX_PHY_GRP_CTRL			0x14
+#define HDMI_3D_TX_PHY_GMPCTRL			0x15
+#define HDMI_3D_TX_PHY_MPLLMEASCTRL		0x16
+#define HDMI_3D_TX_PHY_MSM_CTRL			0x17
+#define HDMI_3D_TX_PHY_SCRPB_STATUS		0x18
+#define HDMI_3D_TX_PHY_TXTERM			0x19
+#define HDMI_3D_TX_PHY_PTRPT_ENBL		0x1a
+#define HDMI_3D_TX_PHY_PATTERNGEN		0x1b
+#define HDMI_3D_TX_PHY_SDCAP_MODE		0x1c
+#define HDMI_3D_TX_PHY_SCOPEMODE		0x1d
+#define HDMI_3D_TX_PHY_DIGTXMODE		0x1e
+#define HDMI_3D_TX_PHY_STR_STATUS		0x1f
+#define HDMI_3D_TX_PHY_SCOPECNT0		0x20
+#define HDMI_3D_TX_PHY_SCOPECNT1		0x21
+#define HDMI_3D_TX_PHY_SCOPECNT2		0x22
+#define HDMI_3D_TX_PHY_SCOPECNTCLK		0x23
+#define HDMI_3D_TX_PHY_SCOPESAMPLE		0x24
+#define HDMI_3D_TX_PHY_SCOPECNTMSB01		0x25
+#define HDMI_3D_TX_PHY_SCOPECNTMSB2CK		0x26
+
 /* Interrupt Registers */
 #define HDMI_IH_FC_STAT0                        0x0100
 #define HDMI_IH_FC_STAT1                        0x0101
@@ -87,7 +141,7 @@
 #define HDMI_IH_I2CM_STAT0                      (HDMI_BASE + 0x0105)
 #define HDMI_IH_CEC_STAT0                       0x0106
 #define HDMI_IH_VP_STAT0                        0x0107
-#define HDMI_IH_I2CMPHY_STAT0                   0x0108
+#define HDMI_IH_I2CMPHY_STAT0                   (HDMI_BASE + 0x0108)
 #define HDMI_IH_AHBDMAAUD_STAT0                 0x0109
 
 #define HDMI_IH_MUTE_FC_STAT0                   (HDMI_BASE + 0x0180)
@@ -423,22 +477,22 @@
 
 /* HDMI Source PHY Registers */
 #define HDMI_PHY_CONF0                          (HDMI_BASE + 0x3000)
-#define HDMI_PHY_TST0                           0x3001
+#define HDMI_PHY_TST0                           (HDMI_BASE + 0x3001)
 #define HDMI_PHY_TST1                           0x3002
 #define HDMI_PHY_TST2                           0x3003
-#define HDMI_PHY_STAT0                          0x3004
+#define HDMI_PHY_STAT0                          (HDMI_BASE + 0x3004)
 #define HDMI_PHY_INT0                           0x3005
 #define HDMI_PHY_MASK0                          (HDMI_BASE + 0x3006)
 #define HDMI_PHY_POL0                           (HDMI_BASE + 0x3007)
 
 /* HDMI Master PHY Registers */
-#define HDMI_PHY_I2CM_SLAVE_ADDR                0x3020
-#define HDMI_PHY_I2CM_ADDRESS_ADDR              0x3021
-#define HDMI_PHY_I2CM_DATAO_1_ADDR              0x3022
-#define HDMI_PHY_I2CM_DATAO_0_ADDR              0x3023
+#define HDMI_PHY_I2CM_SLAVE_ADDR                (HDMI_BASE + 0x3020)
+#define HDMI_PHY_I2CM_ADDRESS_ADDR              (HDMI_BASE + 0x3021)
+#define HDMI_PHY_I2CM_DATAO_1_ADDR              (HDMI_BASE + 0x3022)
+#define HDMI_PHY_I2CM_DATAO_0_ADDR              (HDMI_BASE + 0x3023)
 #define HDMI_PHY_I2CM_DATAI_1_ADDR              0x3024
 #define HDMI_PHY_I2CM_DATAI_0_ADDR              0x3025
-#define HDMI_PHY_I2CM_OPERATION_ADDR            0x3026
+#define HDMI_PHY_I2CM_OPERATION_ADDR            (HDMI_BASE + 0x3026)
 #define HDMI_PHY_I2CM_INT_ADDR                  (HDMI_BASE + 0x3027)
 #define HDMI_PHY_I2CM_CTLINT_ADDR               (HDMI_BASE + 0x3028)
 #define HDMI_PHY_I2CM_DIV_ADDR                  0x3029
@@ -482,6 +536,16 @@
 #define HDMI_GP_INT                             0x3504
 #define HDMI_GP_MASK                            (HDMI_BASE + 0x3505)
 #define HDMI_GP_POL                             0x3506
+
+/* Main Controller Registers */
+#define HDMI_MC_SFRDIV                          0x4000
+#define HDMI_MC_CLKDIS                          0x4001
+#define HDMI_MC_SWRSTZ                          0x4002
+#define HDMI_MC_OPCTRL                          0x4003
+#define HDMI_MC_FLOWCTRL                        0x4004
+#define HDMI_MC_PHYRSTZ                         (HDMI_BASE + 0x4005)
+#define HDMI_MC_LOCKONCLOCK                     0x4006
+#define HDMI_MC_HEACPHY_RST                     (HDMI_BASE + 0x4007)
 
 /* HDCP Encryption Engine Registers */
 #define HDMI_A_HDCPCFG0                         0x5000

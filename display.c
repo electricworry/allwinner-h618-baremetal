@@ -255,6 +255,30 @@ void clocks_init(void)
        which will do the serious work to get the framebuffer going. */
 }
 
+static bool hdmi_phy_wait_i2c_done(int msec)
+{
+	uint32_t val;
+
+	while ((val = readb(HDMI_IH_I2CMPHY_STAT0) & 0x3) == 0) {
+		if (msec-- == 0)
+			return false;
+		udelay(1000);
+	}
+	writeb(val, HDMI_IH_I2CMPHY_STAT0);
+
+	return true;
+}
+
+void dw_hdmi_phy_i2c_write(unsigned short data, unsigned char addr)
+{
+	writeb(0xFF, HDMI_IH_I2CMPHY_STAT0);
+	writeb(addr, HDMI_PHY_I2CM_ADDRESS_ADDR);
+	writeb((unsigned char)(data >> 8), HDMI_PHY_I2CM_DATAO_1_ADDR);
+	writeb((unsigned char)(data >> 0), HDMI_PHY_I2CM_DATAO_0_ADDR);
+	writeb(HDMI_PHY_I2CM_OPERATION_ADDR_WRITE, HDMI_PHY_I2CM_OPERATION_ADDR);
+	hdmi_phy_wait_i2c_done(1000);
+}
+
 /*  Now having set up the clocks, we move onto setting up the graphics IP blocks
     correctly. Everything here happens from sun4i_drv_bind()
 */
@@ -580,6 +604,8 @@ void display_configure(void) {
 #4  0xffff800080a7bf90 in commit_tail (state=state@entry=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1871
 #5  0xffff800080a7d20c in drm_atomic_helper_commit (dev=0xffff0000c0966000, state=0xffff0000c1079d00, nonblock=false) at drivers/gpu/drm/drm_atomic_helper.c:2111
         */
+
+    /* dw_hdmi_phy_power_on() - The display syncs here! */
        
 
     // BEGIN sun4i_tcon_mode_set()
@@ -714,18 +740,71 @@ void display_configure(void) {
 
     // Skipping ahead a little...
 
-    // dw_hdmi_phy_init()
+    /* START dw_hdmi_phy_init() */
+	    /* TODO HDMI Phy spec says to do the phy initialization sequence twice */
         // dw_hdmi_phy_sel_data_en_pol()
         writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_SELDATAENPOL_OFFSET, HDMI_PHY_CONF0_SELDATAENPOL_MASK);
         // dw_hdmi_phy_sel_interface_control()
         writeb_mask(0, HDMI_PHY_CONF0, HDMI_PHY_CONF0_SELDIPIF_OFFSET, HDMI_PHY_CONF0_SELDIPIF_MASK);
-        // hdmi_phy_configure -- TODO
+        // hdmi_phy_configure()
+            // dw_hdmi_phy_power_off()
+            writeb_mask(0, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_TXPWRON_OFFSET, HDMI_PHY_CONF0_GEN2_TXPWRON_MASK);
+            /*
+            * Wait for TX_PHY_LOCK to be deasserted to indicate that the PHY went
+            * to low power mode.
+            */
+            for (i = 0; i < 5; ++i) {
+                printf("LOOP1\n");
+                bval = readb(HDMI_PHY_STAT0);
+                if (!(bval & HDMI_PHY_TX_PHY_LOCK))
+                    break;
+                udelay(2000);
+            }
+            writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_PDDQ_OFFSET, HDMI_PHY_CONF0_GEN2_PDDQ_MASK);
+            // SKIP dw_hdmi_set_high_tmds_clock_ratio() don't care
+	        /* Leave low power consumption mode by asserting SVSRET. */
+            writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_SVSRET_OFFSET, HDMI_PHY_CONF0_SVSRET_MASK);
+            /* PHY reset. The reset signal is active high on Gen2 PHYs. */
+            writeb(HDMI_MC_PHYRSTZ_PHYRSTZ, HDMI_MC_PHYRSTZ);
+            writeb(0, HDMI_MC_PHYRSTZ);
+	        writeb(HDMI_MC_HEACPHY_RST_ASSERT, HDMI_MC_HEACPHY_RST);
+            writeb_mask(1 << HDMI_PHY_TST0_TSTCLR_OFFSET, HDMI_PHY_TST0, HDMI_PHY_TST0_TSTCLK_OFFSET, HDMI_PHY_TST0_TSTCLR_MASK);
+	        writeb(HDMI_PHY_I2CM_SLAVE_ADDR_PHY_GEN2, HDMI_PHY_I2CM_SLAVE_ADDR);
+	        /* Write to the PHY as configured by the platform */
+                // hdmi_phy_configure_dwc_hdmi_3d_tx
+                unsigned long mpixelclock = 108000000;
+                dw_hdmi_phy_i2c_write(0x0051, HDMI_3D_TX_PHY_CPCE_CTRL);
+                dw_hdmi_phy_i2c_write(0x0003,
+                            HDMI_3D_TX_PHY_GMPCTRL);
+                dw_hdmi_phy_i2c_write(0x0019,
+                            HDMI_3D_TX_PHY_CURRCTRL);
 
-        // dw_hdmi_phy_power_off
-        // dw_hdmi_phy_gen2_txpwron
-        // dw_hdmi_phy_gen2_pddq
-        // dw_hdmi_set_high_tmds_clock_ratio
-        // Seriously, it might not be the first run though, but it happens.
+                dw_hdmi_phy_i2c_write(0, HDMI_3D_TX_PHY_PLLPHBYCTRL);
+                dw_hdmi_phy_i2c_write(HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_FB_CLK,
+                            HDMI_3D_TX_PHY_MSM_CTRL);
+
+                dw_hdmi_phy_i2c_write(0x0004, HDMI_3D_TX_PHY_TXTERM);
+                dw_hdmi_phy_i2c_write(0x8019,
+                            HDMI_3D_TX_PHY_CKSYMTXCTRL);
+                dw_hdmi_phy_i2c_write(0x0290,
+                            HDMI_3D_TX_PHY_VLEVCTRL);
+                /* Override and disable clock termination. */
+                dw_hdmi_phy_i2c_write(HDMI_3D_TX_PHY_CKCALCTRL_OVERRIDE,
+                            HDMI_3D_TX_PHY_CKCALCTRL);
+            // dw_hdmi_phy_power_on
+            writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_TXPWRON_OFFSET, HDMI_PHY_CONF0_GEN2_TXPWRON_MASK);
+            writeb_mask(0, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_PDDQ_OFFSET, HDMI_PHY_CONF0_GEN2_PDDQ_MASK);
+	        /* Wait for PHY PLL lock */
+            for (i = 0; i < 50; ++i) {
+                bval = readb(HDMI_PHY_STAT0) & HDMI_PHY_TX_PHY_LOCK;
+                if (bval){
+                    printf("BOOO\n");
+                    break;
+                }
+                printf("LOOP2 %x\n", bval);
+                udelay(2000);
+            }
+    /* END dw_hdmi_phy_init() */
 }
 
 /*  This function attempts to get graphics working.
