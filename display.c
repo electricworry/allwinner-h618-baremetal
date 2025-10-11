@@ -392,21 +392,17 @@ void display_configure(void) {
     // As this variant has no quirks, just one gate - tcon-tv0 - is registered.
     /* END TCON_TOP allwinner,sun50i-h6-tcon-top drivers/gpu/drm/sun4i/sun8i_tcon_top.c:sun8i_tcon_top_bind() */
 
-
-
-
-    
     /* START TCON_TV allwinner,sun8i-r40-tcon-tv drivers/gpu/drm/sun4i/sun4i_tcon.c:sun4i_tcon_bind() */
     // QUIRKS: has_channel_1, polarity_in_ch0, .set_mux = sun8i_r40_tcon_tv_set_mux
-    // De-assert [E]lcd(<&ccu RST_BUS_TCON_TV0>)
+    // Reset(assert/deassert) [E]lcd(<&ccu RST_BUS_TCON_TV0>)
+    SUN50I_H616_CCU_TCON_TV_BGR_REG &= ~BIT(16);
+    udelay(10);
     SUN50I_H616_CCU_TCON_TV_BGR_REG |= BIT(16);
     // can_lvds = false;
-
         // START sun4i_tcon_init_clocks()
         // [E]ahb(<&ccu CLK_BUS_TCON_TV0>) enable aka bus-tcon-tv0
         SUN50I_H616_CCU_TCON_TV_BGR_REG |= BIT(0);
         // END sun4i_tcon_init_clocks()
-
         // START sun4i_tcon_init_regmap()
         /* Make sure the TCON is disabled and all IRQs are off */
         SUN4I_TCON_GCTL_REG = 0;
@@ -416,20 +412,19 @@ void display_configure(void) {
         SUN4I_TCON0_IO_TRI_REG = ~0;
         SUN4I_TCON1_IO_TRI_REG = ~0;
         // END sun4i_tcon_init_regmap()
-
         // TODO? sun4i_tcon_init_irq() - I've skipped IRQ
-
         // START sun4i_crtc_init()
         // This creates and initialises the CRTC.
         // TODO! This initialises layers (see mixer) and is critical
         // END sun4i_crtc_init()
-
     SUN4I_TCON_GCTL_REG |= SUN4I_TCON_GCTL_PAD_SEL;
     /* END TCON_TV allwinner,sun8i-r40-tcon-tv drivers/gpu/drm/sun4i/sun4i_tcon.c:sun4i_tcon_bind() */
 
-    /* At the end of sun8i_dw_hdmi_bind(), we call into dw_hdmi_bind() / dw_hdmi_probe */
-    /* END HDMI allwinner,sun50i-h6-dw-hdmi drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_bind() */
 
+
+
+
+    
     /* START HDMI allwinner,sun50i-h6-dw-hdmi drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_bind() */
     // QUIRKS: use_drm_infoframe, .mode_valid = sun8i_dw_hdmi_mode_valid_h6
     // encoder->possible_crtcs = sun8i_dw_hdmi_find_possible_crtcs(drm, dev->of_node);
@@ -544,7 +539,7 @@ void display_configure(void) {
             /* SKIP hdmi_init_clk_regenerator() - TODO It called hdmi_set_clk_regenerator() and hdmi_set_cts_n() but had no effect in my testing. It's just audio stuff? */
             /* SKIP Further setup skipped. 2 registers are read to configure the driver capabilities. I don't think we care. */
             /* END HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_probe() */
-        /* SKIP drm_bridge_add() call causes calls into dw_hdmi_bridge_attach()/dw_hdmi_connector_create() */
+        /* SKIP drm_bridge_add() call causes calls into dw_hdmi_bridge_attach()/dw_hdmi_connector_create() TODO: This might actually do something*/
         /* END HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_bind() */
     /* END HDMI allwinner,sun50i-h6-dw-hdmi drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_bind() */
 
