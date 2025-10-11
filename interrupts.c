@@ -13,7 +13,7 @@ void complete_irq_hdmi(void);
     interest in different IRQs, but we're just going to hardcode the destination
     of different IRQs.
 */
-void __attribute__((interrupt("IRQ"))) interrupt_active(uint32_t iar_val)
+void /*__attribute__((interrupt("IRQ")))*/ interrupt_active(uint32_t iar_val)
 {
     uint32_t irq = GENMASK(9, 0) & iar_val;
     switch (irq) {
@@ -31,11 +31,11 @@ void game_tick_next();
 
 // Called when an interrupt is triggered
 // Currently this is always triggered by at new frame at 60Hz
-void __attribute__((interrupt("FIQ"))) interrupt(void) {
-  printf("Received INT\n");
-  game_tick_next();
-  // LCD0_GINT0 &= ~(1<<12);
-}
+// void __attribute__((interrupt("FIQ"))) interrupt(void) {
+//   printf("Received INT\n");
+//   game_tick_next();
+//   // LCD0_GINT0 &= ~(1<<12);
+// }
 
 // Copy the interrupt table from _ivt to 0x0
 void install_ivt() {

@@ -22,27 +22,27 @@ volatile uint32_t waiting_for_irq = 0;
 	(HDMI_PHY_RX_SENSE0 | HDMI_PHY_RX_SENSE1 | \
 	 HDMI_PHY_RX_SENSE2 | HDMI_PHY_RX_SENSE3)
 
-static void writeb(uint8_t val, uint32_t reg)
+static void writeb(uint8_t val, uint64_t reg)
 {
     *(uint8_t *)(reg) = val;
 }
 
-static void writel(uint32_t val, uint32_t reg)
+static void writel(uint32_t val, uint64_t reg)
 {
     *(uint32_t *)(reg) = val;
 }
 
-static uint8_t readb(uint32_t reg)
+static uint8_t readb(uint64_t reg)
 {
     return *(uint8_t *)(reg);
 }
 
-static uint32_t readl(uint32_t reg)
+static uint32_t readl(uint64_t reg)
 {
     return *(uint32_t *)(reg);
 }
 
-static void writeb_mask(uint8_t data, uint32_t reg,
+static void writeb_mask(uint8_t data, uint64_t reg,
 			     uint8_t shift, uint8_t mask)
 {
     uint8_t val = *(uint8_t *)(reg);
@@ -51,7 +51,7 @@ static void writeb_mask(uint8_t data, uint32_t reg,
     *(uint8_t *)(reg) = val;
 }
 
-void updatel(uint32_t reg, uint32_t mask, uint32_t val) 
+void updatel(uint64_t reg, uint32_t mask, uint32_t val) 
 { 
     uint32_t tmp, orig;
  
@@ -300,7 +300,7 @@ void display_configure(void) {
     uint32_t phy_rcal;
     int ret;
     uint8_t phy_mask;
-	int plane_cnt, i;
+	uint64_t plane_cnt, i;
 
     /* START MIXER allwinner,sun50i-h616-de33-mixer-0 linux/drivers/gpu/drm/sun4i/sun8i_mixer.c:sun8i_mixer_bind() */
     // Ops are defined.
@@ -815,6 +815,7 @@ void display_init() {
   printf("DONE clocks_init\n");
   display_configure();
   printf("DONE display_configure\n");
+  printf("HHHH %08x\n", GENMASK(27,24));
 }
 
 void buffer_swap() {

@@ -18,6 +18,6 @@ struct port_registers {
 #define PORTI             PIO_BASE + 9 * 0x24
 #define PORTL             0x07022000
 
-void set_pin_mode(uint32_t port, uint32_t pin, uint32_t mode);
-void set_pin_data(uint32_t port, uint32_t pin, uint32_t data);
+void set_pin_mode(uint64_t port, uint32_t pin, uint32_t mode);
+void set_pin_data(uint64_t port, uint32_t pin, uint32_t data);
 void gpio_init();

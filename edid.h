@@ -1,20 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
-
-#define BIT(nr) (1UL << nr)
-
-#define BITS_PER_LONG 64
-#define UL (unsigned long)
-
-#define GENMASK(h, l) \
-	(((~UL(0)) - (UL(1) << (l)) + 1) & \
-	 (~UL(0) >> (BITS_PER_LONG - 1 - (h))))
-
- #define MIN(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _b : _a; })
-
+#include "util.h"
 
 static uint8_t edid_data[] = {
     0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x41, 0x0c, 0xe1, 0x08, 0x11, 0x04, 0x00, 0x00,

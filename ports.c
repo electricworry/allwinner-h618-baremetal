@@ -6,7 +6,7 @@ void gpio_init() {
   // APB0_CLK_GATING |= (1<<0);
 }
 
-void set_pin_mode(uint32_t port_addr, uint32_t pin, uint32_t mode) {
+void set_pin_mode(uint64_t port_addr, uint32_t pin, uint32_t mode) {
   struct port_registers * port = (struct port_registers *)port_addr;
   if(pin < 8) {
     port->cfg0 &= ~(7 << ((pin - 0) * 4));
@@ -23,7 +23,7 @@ void set_pin_mode(uint32_t port_addr, uint32_t pin, uint32_t mode) {
   }
 }
 
-void set_pin_data(uint32_t port_addr, uint32_t pin, uint32_t data) {
+void set_pin_data(uint64_t port_addr, uint32_t pin, uint32_t data) {
   struct port_registers * port = (struct port_registers *)port_addr;
   if(data) {
     port->data |= (1 << pin);
