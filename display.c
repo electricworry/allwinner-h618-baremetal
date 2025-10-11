@@ -314,8 +314,38 @@ void display_configure(void) {
 	 * reason for the mixer to be functional. Make sure it's the
 	 * case.
 	 */
-    // TODO! I've skipped setting the clock rate. MUST DO!
-    // Set CLK_MIXER0 rate to 600 MHz.
+    // [E]mod(<&display_clocks CLK_MIXER0>) aka mixer0, set to 600 MHz.
+    // Clock has no op for set clk, but need to propagate to parents.
+    // Parent: mixer0-div (ccu_div_set_rate)
+    // Parent: de (ccu_div_set_rate)
+    // Parents: pll-de (ccu_nkmp_set_rate), pll-periph0-2x
+                                            // Parents: pll-periph0 (ccu_nkmp_set_rate)
+    /* 1: pll-de, set to 600MHz, parent=24MHz
+       N=25, PLL_FACTOR_N=24 (bits 15:8)
+       M=1, PLL_INPUT_DIV_M1=0 (bits 1)
+       P=1, PLL_OUTPUT_DIV_M0=0 (bits 0)
+    */
+    val = SUN50I_H616_CCU_PLL_DE_REG;
+    val &= ~(GENMASK(15, 8) | BIT(1) | BIT(0));
+    val |= (24 << 8) | (0 << 1) | (0 << 0);
+    SUN50I_H616_CCU_PLL_DE_REG = val;
+    /* 2:de set to 600MHz, parent=600MHz
+       CLK_SRC_SEL=0(PLL-DE) (bits 24)
+       M=1, FACTOR_M=0 (bits 3:0)
+    */
+    val = SUN50I_H616_CCU_DE_CLK_REG;
+    val &= ~(BIT(24) | GENMASK(3, 0));
+    val |= (0 << 24) | (0 << 0);
+    SUN50I_H616_CCU_DE_CLK_REG = val;
+    /* 3:mixer0-div set to 600MHz, parent=600MHz
+       M=1, FACTOR_M=0 (bits 3:0)
+    */
+    val = DE33_CLK_MIXER0_DIV;
+    val &= ~(GENMASK(3, 0));
+    val |= (0 << 0);
+    DE33_CLK_MIXER0_DIV = val;
+    /* 4:mixer0_clk NOP
+    */
     // [E]mod(<&display_clocks CLK_MIXER0>) enable aka mixer0
     DE33_CLK_MIXER0 |= BIT(0);
         /* START sun8i_mixer_init() */
@@ -362,6 +392,10 @@ void display_configure(void) {
     // As this variant has no quirks, just one gate - tcon-tv0 - is registered.
     /* END TCON_TOP allwinner,sun50i-h6-tcon-top drivers/gpu/drm/sun4i/sun8i_tcon_top.c:sun8i_tcon_top_bind() */
 
+
+
+
+    
     /* START TCON_TV allwinner,sun8i-r40-tcon-tv drivers/gpu/drm/sun4i/sun4i_tcon.c:sun4i_tcon_bind() */
     // QUIRKS: has_channel_1, polarity_in_ch0, .set_mux = sun8i_r40_tcon_tv_set_mux
     // De-assert [E]lcd(<&ccu RST_BUS_TCON_TV0>)

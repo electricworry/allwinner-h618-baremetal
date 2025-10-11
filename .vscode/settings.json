@@ -3,6 +3,7 @@
         "util.h": "c",
         "stdint.h": "c",
         "memory": "c",
-        "cstdint": "c"
+        "cstdint": "c",
+        "array": "c"
     }
 }
