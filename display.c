@@ -420,11 +420,6 @@ void display_configure(void) {
     SUN4I_TCON_GCTL_REG |= SUN4I_TCON_GCTL_PAD_SEL;
     /* END TCON_TV allwinner,sun8i-r40-tcon-tv drivers/gpu/drm/sun4i/sun4i_tcon.c:sun4i_tcon_bind() */
 
-
-
-
-
-    
     /* START HDMI allwinner,sun50i-h6-dw-hdmi drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c:sun8i_dw_hdmi_bind() */
     // QUIRKS: use_drm_infoframe, .mode_valid = sun8i_dw_hdmi_mode_valid_h6
     // encoder->possible_crtcs = sun8i_dw_hdmi_find_possible_crtcs(drm, dev->of_node);
@@ -586,66 +581,60 @@ void display_configure(void) {
         printf("\n");
         // END dw_hdmi_edid_read()/dw_hdmi_i2c_xfer()
     // END dw_hdmi_connector_get_modes()
+
+    // drm_edid.c - Parse the EDID data into a DRM mode in drm_mode_detailed()
     
-    // drm_client_setup
-        // drm_fbdev_client_setup
-            // drm_client_register
-                // drm_fbdev_client_hotplug
-                    // drm_fb_helper_initial_config
-                        // __drm_fb_helper_initial_config_and_unlock <-- happens here
-                            //drm_client_modeset_probe
-                                // drm_helper_probe_single_connector_modes <-- gets display modes. Also adds 1024x768 if no edid! And a cmdline mode if specified
-                                // __drm_helper_update_and_validate - Validates modes against the connector (e.g. is interlace allowed?)
-                            // drm_fb_helper_single_fb_probe - Not interesting?
-                            // drm_setup_crtcs_fb - Nothing interesting
-                            // register_framebuffer/do_register_framebuffer
-                                // fb_device_create()    ????
-                                // Allocate pixmap       ????
-                                // fb_var_to_videomode() ????
-                                // fb_add_videomode()    ????
-                                // fbcon_fb_registered()/do_fb_registered() (BOOM!)
-                                    // do_fbcon_takeover()
-                                        // do_take_over_console
-                                            //do_bind_con_driver
-                                                // visual_init
-                                                    // con_init(fbcon_init)
-                                                        //...
-                                                        // drm_client_modeset_commit_atomic - SETS UP PLANES AND MODESET <-- suggest debug from here!
-                                                            // drm_atomic_commit BOOM!
-                                        
-    /* START drm_atomic_commit() */
-        // sun4i_de_atomic_check
-            // drm_atomic_helper_check_modeset
-                // dw_hdmi_connector_atomic_check
-                // mode_fixup
-                    // drm_atomic_bridge_chain_check
-                        // drm_atomic_bridge_chain_select_bus_fmts
-                            // dw_hdmi_bridge_atomic_get_output_bus_fmts - Decides on the fmt
-                            // dw_hdmi_bridge_atomic_get_input_bus_fmts  - Decides on the fmt
-            // drm_atomic_helper_check_planes
-                // sun4i_crtc_atomic_check
-        // So far so uninteresting...
-        /* drm_atomic_helper_commit - Things rapidly go batshit here. Here's the callstack:
-#0  sun4i_crtc_mode_set_nofb (crtc=0xffff0000c0967080) at drivers/gpu/drm/sun4i/sun4i_crtc.c:143
-#1  0xffff800080a77ebc in crtc_set_mode (dev=dev@entry=0xffff0000c0966000, state=state@entry=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1398
-#2  0xffff800080a7ba34 in drm_atomic_helper_commit_modeset_disables (dev=0xffff0000c0966000, state=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1461
-#3  drm_atomic_helper_commit_tail_rpm (state=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1816
-#4  0xffff800080a7bf90 in commit_tail (state=state@entry=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1871
-#5  0xffff800080a7d20c in drm_atomic_helper_commit (dev=0xffff0000c0966000, state=0xffff0000c1079d00, nonblock=false) at drivers/gpu/drm/drm_atomic_helper.c:2111
-        */
-
-    /* dw_hdmi_phy_power_on() - The display syncs here! */
-       
-
     // BEGIN sun4i_tcon_mode_set()
     // DRM_MODE_ENCODER_TMDS
         // BEGIN sun4i_tcon1_mode_set(tcon, mode);
-	    /* Configure the dot clock */
-        // clk_set_rate(tcon->sclk1, 32000 /* from where? */ * 1000 / 1 ); aka "tcon-ch1" <&tcon_top CLK_TCON_TOP_TV0>
+	    /* Configure the dot clock clk_set_rate(tcon->sclk1, 32000 (from EDID * 1000 / 1 ); aka tcon-ch1 <&tcon_top CLK_TCON_TOP_TV0> aka tcon-top-tv0 */
+        // Clock has no op for set clk, but need to propagate to parents.
+        // Parent: pll-video0 pll-video0-4x pll-video1 pll-video1-4x
+        // The algorithm decides to set pll_video0_clk to 96MHz
+        /* 1: pll-video0, set to 96MHz, parent=24MHz
+        FIXED_POST_DIV=4, so actually 384MHz
+        N=16, PLL_FACTOR_N=15 (bits 15:8)
+        M=1, PLL_INPUT_DIV_M=0 (bits 1)
+        */
+        val = SUN50I_H616_CCU_PLL_VIDEO0_REG;
+        val &= ~(GENMASK(15, 8) | BIT(1));
+        val |= (15 << 8) | (0 << 1);
+        SUN50I_H616_CCU_PLL_VIDEO0_REG = val;
+        /* 2: tve0, set to 96MHz, parent=96MHz
+        N=1, FACTOR_N=0 (bits 9:8)
+        M=1, FACTOR_M=0 (bits 3:0)
+        */
+        val = SUN50I_H616_CCU_TVE0_CLK_REG;
+        val &= ~(GENMASK(9, 8) | GENMASK(3, 0));
+        val |= (0 << 8) | (0 << 0);
+        SUN50I_H616_CCU_TVE0_CLK_REG = val;
+        /* 3: tcon-tv1, set to 96MHz, parent=96MHz
+        N=1, FACTOR_N=0 (bits 9:8)
+        M=1, FACTOR_M=0 (bits 3:0)
+        */
+        val = SUN50I_H616_CCU_TCON_TV1_CLK_REG;
+        val &= ~(GENMASK(9, 8) | GENMASK(3, 0));
+        val |= (0 << 8) | (0 << 0);
+        SUN50I_H616_CCU_TCON_TV1_CLK_REG = val;
+        /* 4: tcon-tv0, set to 32MHz, parent=96MHz
+        N=1, FACTOR_N=0 (bits 9:8)
+        M=3, FACTOR_M=2 (bits 3:0)
+        */
+        val = SUN50I_H616_CCU_TCON_TV0_CLK_REG;
+        val &= ~(GENMASK(9, 8) | GENMASK(3, 0));
+        val |= (0 << 8) | (0 << 2);
+        SUN50I_H616_CCU_TCON_TV0_CLK_REG = val;
+        /* 5: hdmi-clk, set to 96MHz, parent=96MHz
+        M=1, FACTOR_M=0 (bits 3:0)
+        */
+        val = SUN50I_H616_CCU_HDMI0_CLK_REG;
+        val &= ~(GENMASK(3, 0));
+        val |= (0 << 0);
+        SUN50I_H616_CCU_HDMI0_CLK_REG = val;
 	    /* Adjust clock delay */
-        // clk_delay = 30
+        // clk_delay = 45
         val = SUN4I_TCON1_CTL_REG & ~SUN4I_TCON1_CTL_CLK_DELAY_MASK;
-        val |= SUN4I_TCON1_CTL_CLK_DELAY(30);
+        val |= SUN4I_TCON1_CTL_CLK_DELAY(45);
         SUN4I_TCON1_CTL_REG = val;
 	    /* Set interlaced mode */
 	    /* Set the input resolution */
@@ -744,31 +733,17 @@ void display_configure(void) {
     SUN4I_TCON_GCTL_REG |= SUN4I_TCON_GCTL_TCON_ENABLE;
         // BEGIN sun4i_tcon_channel_set_status
         SUN4I_TCON1_CTL_REG |= SUN4I_TCON1_CTL_TCON_ENABLE;
-        TCON_TOP_GATE_SRC_REG |= (1 << 20); // Enable tcon-ch1 <&tcon_top CLK_TCON_TOP_TV0>
+        TCON_TOP_GATE_SRC_REG |= (1 << 20); // Enable [E]tcon-ch1 <&tcon_top CLK_TCON_TOP_TV0> aka tcon-top-tv0
+        SUN50I_H616_CCU_TCON_TV0_CLK_REG |= BIT(31); // Parent: [E]tcon-tv0 <&ccu CLK_TCON_TV0> aka tcon-top-tv0 enable
         // END sun4i_tcon_channel_set_status
     // END sun4i_tcon_set_status - enable
 
-    // We must set the "tmds" <&ccu CLK_HDMI> to the pixelclock (108MHz)
-    // static const char * const hdmi_parents[] = { "pll-video0", "pll-video0-4x",
-	// 				     "pll-video2", "pll-video2-4x" };
-    // static SUNXI_CCU_M_WITH_MUX_GATE(hdmi_clk, "hdmi", hdmi_parents, 0xb00,
-    //                 0, 4,		/* M */
-    //                 24, 2,		/* mux */
-    //                 BIT(31),	/* gate */
-    //                 0);
-    // These clock registers have the following implementation:
-    // M or Factor M is a dividing factor. Here bits 3:0 are M.
-    // Bits 25:24 are a mux, between four parent clocks. PLL_VIDEO0(1X), PLL_VIDEO0(4X), PLL_VIDEO2(1X), PLL_VIDEO2(4X)
+
+    // 1: dw_hdmi_update_power
 
 
 
-    // START dw_hdmi_bridge_atomic_enable
-        // START dw_hdmi_update_power
-            // START dw_hdmi_poweron
-                // START dw_hdmi_setup !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    // Skipping ahead a little...
-
+    
     /* START dw_hdmi_phy_init() */
 	    /* TODO HDMI Phy spec says to do the phy initialization sequence twice */
         // dw_hdmi_phy_sel_data_en_pol()
@@ -834,6 +809,84 @@ void display_configure(void) {
                 udelay(2000);
             }
     /* END dw_hdmi_phy_init() */
+
+
+
+
+
+
+
+    // drm_client_setup
+        // drm_fbdev_client_setup
+            // drm_client_register
+                // drm_fbdev_client_hotplug
+                    // drm_fb_helper_initial_config
+                        // __drm_fb_helper_initial_config_and_unlock <-- happens here
+                            //drm_client_modeset_probe
+                                // drm_helper_probe_single_connector_modes <-- gets display modes. Also adds 1024x768 if no edid! And a cmdline mode if specified
+                                // __drm_helper_update_and_validate - Validates modes against the connector (e.g. is interlace allowed?)
+                            // drm_fb_helper_single_fb_probe - Not interesting?
+                            // drm_setup_crtcs_fb - Nothing interesting
+                            // register_framebuffer/do_register_framebuffer
+                                // fb_device_create()    ????
+                                // Allocate pixmap       ????
+                                // fb_var_to_videomode() ????
+                                // fb_add_videomode()    ????
+                                // fbcon_fb_registered()/do_fb_registered() (BOOM!)
+                                    // do_fbcon_takeover()
+                                        // do_take_over_console
+                                            //do_bind_con_driver
+                                                // visual_init
+                                                    // con_init(fbcon_init)
+                                                        //...
+                                                        // drm_client_modeset_commit_atomic - SETS UP PLANES AND MODESET <-- suggest debug from here!
+                                                            // drm_atomic_commit BOOM!
+                                        
+    /* START drm_atomic_commit() */
+        // sun4i_de_atomic_check
+            // drm_atomic_helper_check_modeset
+                // dw_hdmi_connector_atomic_check
+                // mode_fixup
+                    // drm_atomic_bridge_chain_check
+                        // drm_atomic_bridge_chain_select_bus_fmts
+                            // dw_hdmi_bridge_atomic_get_output_bus_fmts - Decides on the fmt
+                            // dw_hdmi_bridge_atomic_get_input_bus_fmts  - Decides on the fmt
+            // drm_atomic_helper_check_planes
+                // sun4i_crtc_atomic_check
+        // So far so uninteresting...
+        /* drm_atomic_helper_commit - Things rapidly go batshit here. Here's the callstack:
+#0  sun4i_crtc_mode_set_nofb (crtc=0xffff0000c0967080) at drivers/gpu/drm/sun4i/sun4i_crtc.c:143
+#1  0xffff800080a77ebc in crtc_set_mode (dev=dev@entry=0xffff0000c0966000, state=state@entry=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1398
+#2  0xffff800080a7ba34 in drm_atomic_helper_commit_modeset_disables (dev=0xffff0000c0966000, state=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1461
+#3  drm_atomic_helper_commit_tail_rpm (state=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1816
+#4  0xffff800080a7bf90 in commit_tail (state=state@entry=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1871
+#5  0xffff800080a7d20c in drm_atomic_helper_commit (dev=0xffff0000c0966000, state=0xffff0000c1079d00, nonblock=false) at drivers/gpu/drm/drm_atomic_helper.c:2111
+        */
+
+    /* dw_hdmi_phy_power_on() - The display syncs here! */
+       
+
+    // We must set the "tmds" <&ccu CLK_HDMI> to the pixelclock (108MHz)
+    // static const char * const hdmi_parents[] = { "pll-video0", "pll-video0-4x",
+	// 				     "pll-video2", "pll-video2-4x" };
+    // static SUNXI_CCU_M_WITH_MUX_GATE(hdmi_clk, "hdmi", hdmi_parents, 0xb00,
+    //                 0, 4,		/* M */
+    //                 24, 2,		/* mux */
+    //                 BIT(31),	/* gate */
+    //                 0);
+    // These clock registers have the following implementation:
+    // M or Factor M is a dividing factor. Here bits 3:0 are M.
+    // Bits 25:24 are a mux, between four parent clocks. PLL_VIDEO0(1X), PLL_VIDEO0(4X), PLL_VIDEO2(1X), PLL_VIDEO2(4X)
+
+
+
+    // START dw_hdmi_bridge_atomic_enable
+        // START dw_hdmi_update_power
+            // START dw_hdmi_poweron
+                // START dw_hdmi_setup !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    // Skipping ahead a little...
+
 }
 
 /*  This function attempts to get graphics working.

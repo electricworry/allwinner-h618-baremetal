@@ -35,7 +35,9 @@
 #define SUN50I_H616_CCU_HDMI_CEC_CLK_REG        *(volatile uint32_t *)(CCU_BASE + 0x0b10)
 #define SUN50I_H616_CCU_HDMI_BGR_REG            *(volatile uint32_t *)(CCU_BASE + 0x0b1c)
 #define SUN50I_H616_CCU_DISPLAY_IF_TOP_BGR_REG  *(volatile uint32_t *)(CCU_BASE + 0x0b5C)
-#define SUN50I_H616_CCU_TVE0_CLK_REG            *(volatile uint32_t *)(CCU_BASE + 0x0b80)
+#define SUN50I_H616_CCU_TCON_TV0_CLK_REG        *(volatile uint32_t *)(CCU_BASE + 0x0b80)
+#define SUN50I_H616_CCU_TCON_TV1_CLK_REG        *(volatile uint32_t *)(CCU_BASE + 0x0b84)
 #define SUN50I_H616_CCU_TCON_TV_BGR_REG         *(volatile uint32_t *)(CCU_BASE + 0x0b9c)
+#define SUN50I_H616_CCU_TVE0_CLK_REG            *(volatile uint32_t *)(CCU_BASE + 0x0bb0)
 
 #endif
