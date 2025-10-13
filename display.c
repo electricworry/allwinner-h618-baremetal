@@ -625,7 +625,9 @@ void display_configure(void) {
         */
         val = SUN50I_H616_CCU_TCON_TV0_CLK_REG;
         val &= ~(GENMASK(9, 8) | GENMASK(3, 0));
-        val |= (0 << 8) | (0 << 2);
+        val |= (0 << 8) | (2 << 0); /* (0<<2) was a mistake.*/
+                                    /* (2<<0) is what it should be? */
+                                    /* Higher values produce some wonderfully janky output */
         SUN50I_H616_CCU_TCON_TV0_CLK_REG = val;
         /* 5: hdmi-clk, set to 96MHz, parent=96MHz
         M=1, FACTOR_M=0 (bits 3:0)
@@ -745,10 +747,44 @@ void display_configure(void) {
             /* START dw_hdmi_poweron */
                 /* START dw_hdmi_setup */ /// TODO GET THIS IMPLEMENTED
                     // hdmi_disable_overflow_interrupts
-
+                    writeb(HDMI_IH_MUTE_FC_STAT2_OVERFLOW_MASK, HDMI_IH_MUTE_FC_STAT2);
                 	/* HDMI Initialization Step B.1 */
-                    // hdmi_av_composer
-
+                    /* START hdmi_av_composer() */
+                        // clk = 32 MHz
+                        // mtmdsclock = 32 MHz
+                        // TODO Calc:
+                        uint8_t inv_val = 0x10;
+                        writeb(inv_val, HDMI_FC_INVIDCONF);
+                        /* Set up horizontal active pixel width */
+                        uint32_t hdisplay = 800;
+                        writeb(hdisplay >> 8, HDMI_FC_INHACTV1);
+                        writeb(hdisplay, HDMI_FC_INHACTV0);
+                        /* Set up vertical active lines */
+                        uint32_t vdisplay = 480;
+                        writeb(vdisplay >> 8, HDMI_FC_INVACTV1);
+                        writeb(vdisplay, HDMI_FC_INVACTV0);
+                        /* Set up horizontal blanking pixel region width */
+                        uint32_t hblank = 128;
+                        writeb(hblank >> 8, HDMI_FC_INHBLANK1);
+                        writeb(hblank, HDMI_FC_INHBLANK0);
+                        /* Set up vertical blanking pixel region width */
+                        uint32_t vblank = 45;
+                        writeb(vblank, HDMI_FC_INVBLANK);
+                        /* Set up HSYNC active edge delay width (in pixel clks) */
+                        uint32_t h_de_hs = 40;
+                        writeb(h_de_hs >> 8, HDMI_FC_HSYNCINDELAY1);
+                        writeb(h_de_hs, HDMI_FC_HSYNCINDELAY0);
+                        /* Set up VSYNC active edge delay (in lines) */
+                        uint32_t v_de_vs = 13;
+                        writeb(v_de_vs, HDMI_FC_VSYNCINDELAY);
+                        /* Set up HSYNC active pulse width (in pixel clks) */
+                        uint32_t hsync_len = 48;
+                        writeb(hsync_len >> 8, HDMI_FC_HSYNCINWIDTH1);
+                        writeb(hsync_len, HDMI_FC_HSYNCINWIDTH0);
+                        /* Set up VSYNC active edge delay (in lines) */
+                        uint32_t vsync_len = 3;
+                        writeb(vsync_len, HDMI_FC_VSYNCINWIDTH);
+                    /* END hdmi_av_composer() */
                     /* HDMI Initializateion Step B.2 */
                     /* START dw_hdmi_phy_init() */
                         /* HDMI Phy spec says to do the phy initialization sequence twice */
@@ -819,13 +855,168 @@ void display_configure(void) {
                     /* END dw_hdmi_phy_init() */
 
 	                /* HDMI Initialization Step B.3 */
-                    // dw_hdmi_enable_video_path
+                    /* START dw_hdmi_enable_video_path */
+                        /* control period minimum duration */
+                        writeb(12, HDMI_FC_CTRLDUR);
+                        writeb(32, HDMI_FC_EXCTRLDUR);
+                        writeb(1, HDMI_FC_EXCTRLSPAC);
+
+                        /* Set to fill TMDS data channels */
+                        writeb(0x0B, HDMI_FC_CH0PREAM);
+                        writeb(0x16, HDMI_FC_CH1PREAM);
+                        writeb(0x21, HDMI_FC_CH2PREAM);
+
+                        /* Enable pixel clock and tmds data path */
+                        uint8_t mc_clkdis = 0x7f;
+                        mc_clkdis |= HDMI_MC_CLKDIS_HDCPCLK_DISABLE |
+                                HDMI_MC_CLKDIS_CSCCLK_DISABLE |
+                                HDMI_MC_CLKDIS_AUDCLK_DISABLE |
+                                HDMI_MC_CLKDIS_PREPCLK_DISABLE |
+                                HDMI_MC_CLKDIS_TMDSCLK_DISABLE;
+                        mc_clkdis &= ~HDMI_MC_CLKDIS_PIXELCLK_DISABLE;
+                        writeb(mc_clkdis, HDMI_MC_CLKDIS);
+
+                        mc_clkdis &= ~HDMI_MC_CLKDIS_TMDSCLK_DISABLE;
+                        writeb(mc_clkdis, HDMI_MC_CLKDIS);
+
+                        /* Enable csc (colour space conversion) path */
+                        if (/*is_csc_needed(hdmi)*/ 0) {
+                            // hdmi->mc_clkdis &= ~HDMI_MC_CLKDIS_CSCCLK_DISABLE;
+                            // hdmi_writeb(hdmi, hdmi->mc_clkdis, HDMI_MC_CLKDIS);
+
+                            // hdmi_writeb(hdmi, HDMI_MC_FLOWCTRL_FEED_THROUGH_OFF_CSC_IN_PATH,
+                            //         HDMI_MC_FLOWCTRL);
+                        } else {
+                            mc_clkdis |= HDMI_MC_CLKDIS_CSCCLK_DISABLE;
+                            writeb(mc_clkdis, HDMI_MC_CLKDIS);
+
+                            writeb(HDMI_MC_FLOWCTRL_FEED_THROUGH_OFF_CSC_BYPASS,
+                                    HDMI_MC_FLOWCTRL);
+                        }
+                    /* END dw_hdmi_enable_video_path */
 
                     /* SKIP HDMI Initialization Step E - Configure audio */
 
-                    /* HDMI Initialization Step F - Configure AVI InfoFrame */
+                    /* not for DVI mode */ // TODO: Why does this display appear as DVI?
+                    if (0) {
+                        // dev_dbg(hdmi->dev, "%s HDMI mode\n", __func__);
 
-                    // Final trailing calls
+                        /* HDMI Initialization Step F - Configure AVI InfoFrame */
+                        // hdmi_config_AVI(hdmi, connector, mode);
+                        // hdmi_config_vendor_specific_infoframe(hdmi, connector, mode);
+                        // hdmi_config_drm_infoframe(hdmi, connector);
+                    }
+
+                    /* Final trailing calls: */
+                    // START hdmi_video_packetize(hdmi);
+                        writeb(64, HDMI_VP_PR_CD);
+                        /* HDMI1.4b specification section 6.5.3:
+                        * Source shall only send GCPs with non-zero CD to sinks
+                        * that indicate support for Deep Color.
+                        * GCP only transmit CD and do not handle AVMUTE, PP norDefault_Phase (yet).
+                        * Disable Auto GCP when 24-bit color for sinks that not support Deep Color.
+                        */
+                        bval = readb(HDMI_FC_DATAUTO3);
+	                    uint8_t clear_gcp_auto = 1;
+                        uint8_t vp_conf;
+                        unsigned int output_select = HDMI_VP_CONF_OUTPUT_SELECTOR_BYPASS;
+	                    unsigned int remap_size = HDMI_VP_REMAP_YCC422_16bit;
+                        if (clear_gcp_auto == 1)
+                            val &= ~HDMI_FC_DATAUTO3_GCP_AUTO;
+                        else
+                            val |= HDMI_FC_DATAUTO3_GCP_AUTO;
+                        writeb(val, HDMI_FC_DATAUTO3);
+
+                        writeb_mask(HDMI_VP_STUFF_PR_STUFFING_STUFFING_MODE, HDMI_VP_STUFF,
+                            0, HDMI_VP_STUFF_PR_STUFFING_MASK);
+
+                        /* Data from pixel repeater block */
+                        // if (hdmi_data->pix_repet_factor > 1) {
+                        //     vp_conf = HDMI_VP_CONF_PR_EN_ENABLE |
+                        //         HDMI_VP_CONF_BYPASS_SELECT_PIX_REPEATER;
+                        // } else { /* data from packetizer block */
+                            vp_conf = HDMI_VP_CONF_PR_EN_DISABLE |
+                                HDMI_VP_CONF_BYPASS_SELECT_VID_PACKETIZER;
+                        // }
+
+                        writeb_mask(vp_conf, HDMI_VP_CONF, 0,
+                            HDMI_VP_CONF_PR_EN_MASK |
+                            HDMI_VP_CONF_BYPASS_SELECT_MASK);
+
+                        writeb_mask(1 << HDMI_VP_STUFF_IDEFAULT_PHASE_OFFSET, HDMI_VP_STUFF, 0,
+                            HDMI_VP_STUFF_IDEFAULT_PHASE_MASK);
+
+                        writeb(remap_size, HDMI_VP_REMAP);
+
+                        // if (output_select == HDMI_VP_CONF_OUTPUT_SELECTOR_PP) {
+                        //     vp_conf = HDMI_VP_CONF_BYPASS_EN_DISABLE |
+                        //         HDMI_VP_CONF_PP_EN_ENABLE |
+                        //         HDMI_VP_CONF_YCC422_EN_DISABLE;
+                        // } else if (output_select == HDMI_VP_CONF_OUTPUT_SELECTOR_YCC422) {
+                        //     vp_conf = HDMI_VP_CONF_BYPASS_EN_DISABLE |
+                        //         HDMI_VP_CONF_PP_EN_DISABLE |
+                        //         HDMI_VP_CONF_YCC422_EN_ENABLE;
+                        // } else if (output_select == HDMI_VP_CONF_OUTPUT_SELECTOR_BYPASS) {
+                            vp_conf = HDMI_VP_CONF_BYPASS_EN_ENABLE |
+                                HDMI_VP_CONF_PP_EN_DISABLE |
+                                HDMI_VP_CONF_YCC422_EN_DISABLE;
+                        // } else {
+                        //     return;
+                        // }
+
+                        writeb_mask(vp_conf, HDMI_VP_CONF, 0,
+                            HDMI_VP_CONF_BYPASS_EN_MASK | HDMI_VP_CONF_PP_EN_ENMASK |
+                            HDMI_VP_CONF_YCC422_EN_MASK);
+
+                        writeb_mask(HDMI_VP_STUFF_PP_STUFFING_STUFFING_MODE |
+                                HDMI_VP_STUFF_YCC422_STUFFING_STUFFING_MODE, HDMI_VP_STUFF, 0,
+                            HDMI_VP_STUFF_PP_STUFFING_MASK |
+                            HDMI_VP_STUFF_YCC422_STUFFING_MASK);
+
+                        writeb_mask(output_select, HDMI_VP_CONF, 0,
+                            HDMI_VP_CONF_OUTPUT_SELECTOR_MASK);
+                    // END hdmi_video_packetize(hdmi);
+
+                    /* START hdmi_video_csc(hdmi); */
+                        /* Configure the CSC registers */
+                        writeb(0, HDMI_CSC_CFG);
+                        writeb_mask(0, HDMI_CSC_SCALE, 0, HDMI_CSC_SCALE_CSC_COLORDE_PTH_MASK);
+                        // TODO dw_hdmi_update_csc_coeffs(hdmi);
+                    /* END hdmi_video_csc(hdmi); */
+                    /* START hdmi_video_sample(hdmi); */
+                        bval = HDMI_TX_INVID0_INTERNAL_DE_GENERATOR_DISABLE |
+                            ((1 << HDMI_TX_INVID0_VIDEO_MAPPING_OFFSET) &
+                            HDMI_TX_INVID0_VIDEO_MAPPING_MASK);
+                        writeb(bval, HDMI_TX_INVID0);
+
+                        /* Enable TX stuffing: When DE is inactive, fix the output data to 0 */
+                        bval = HDMI_TX_INSTUFFING_BDBDATA_STUFFING_ENABLE |
+                            HDMI_TX_INSTUFFING_RCRDATA_STUFFING_ENABLE |
+                            HDMI_TX_INSTUFFING_GYDATA_STUFFING_ENABLE;
+                        writeb(bval, HDMI_TX_INSTUFFING);
+                        writeb(0x0, HDMI_TX_GYDATA0);
+                        writeb(0x0, HDMI_TX_GYDATA1);
+                        writeb(0x0, HDMI_TX_RCRDATA0);
+                        writeb(0x0, HDMI_TX_RCRDATA1);
+                        writeb(0x0, HDMI_TX_BCBDATA0);
+                        writeb(0x0, HDMI_TX_BCBDATA1);
+                    /* END hdmi_video_sample(hdmi); */
+                    /* START hdmi_tx_hdcp_config(hdmi); */
+                            uint8_t de = HDMI_A_VIDPOLCFG_DATAENPOL_ACTIVE_HIGH;
+                            /* disable rx detect */
+                            writeb_mask(HDMI_A_HDCPCFG0_RXDETECT_DISABLE, HDMI_A_HDCPCFG0, 0,
+                                HDMI_A_HDCPCFG0_RXDETECT_MASK);
+
+                            writeb_mask(de, HDMI_A_VIDPOLCFG, 0, HDMI_A_VIDPOLCFG_DATAENPOL_MASK);
+
+                            writeb_mask(HDMI_A_HDCPCFG1_ENCRYPTIONDISABLE_DISABLE, HDMI_A_HDCPCFG1, 0,
+                                HDMI_A_HDCPCFG1_ENCRYPTIONDISABLE_MASK);
+                    /* END hdmi_tx_hdcp_config(hdmi); */
+                    /* START dw_hdmi_clear_overflow(hdmi); */
+                        writeb((uint8_t)~HDMI_MC_SWRSTZ_TMDSSWRST_REQ, HDMI_MC_SWRSTZ);
+                        bval = readb(HDMI_FC_INVIDCONF);
+                        writeb(bval, HDMI_FC_INVIDCONF);
+                    /* END dw_hdmi_clear_overflow(hdmi); */
 
                 /* END dw_hdmi_setup */
             /* END dw_hdmi_poweron */

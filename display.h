@@ -157,50 +157,50 @@
 #define HDMI_IH_MUTE                            (HDMI_BASE + 0x01FF)
 
 /* Video Sample Registers */
-#define HDMI_TX_INVID0                          0x0200
-#define HDMI_TX_INSTUFFING                      0x0201
-#define HDMI_TX_GYDATA0                         0x0202
-#define HDMI_TX_GYDATA1                         0x0203
-#define HDMI_TX_RCRDATA0                        0x0204
-#define HDMI_TX_RCRDATA1                        0x0205
-#define HDMI_TX_BCBDATA0                        0x0206
-#define HDMI_TX_BCBDATA1                        0x0207
+#define HDMI_TX_INVID0                          (HDMI_BASE + 0x0200)
+#define HDMI_TX_INSTUFFING                      (HDMI_BASE + 0x0201)
+#define HDMI_TX_GYDATA0                         (HDMI_BASE + 0x0202)
+#define HDMI_TX_GYDATA1                         (HDMI_BASE + 0x0203)
+#define HDMI_TX_RCRDATA0                        (HDMI_BASE + 0x0204)
+#define HDMI_TX_RCRDATA1                        (HDMI_BASE + 0x0205)
+#define HDMI_TX_BCBDATA0                        (HDMI_BASE + 0x0206)
+#define HDMI_TX_BCBDATA1                        (HDMI_BASE + 0x0207)
 
 /* Video Packetizer Registers */
 #define HDMI_VP_STATUS                          0x0800
-#define HDMI_VP_PR_CD                           0x0801
-#define HDMI_VP_STUFF                           0x0802
-#define HDMI_VP_REMAP                           0x0803
-#define HDMI_VP_CONF                            0x0804
+#define HDMI_VP_PR_CD                           (HDMI_BASE + 0x0801)
+#define HDMI_VP_STUFF                           (HDMI_BASE + 0x0802)
+#define HDMI_VP_REMAP                           (HDMI_BASE + 0x0803)
+#define HDMI_VP_CONF                            (HDMI_BASE + 0x0804)
 #define HDMI_VP_STAT                            0x0805
 #define HDMI_VP_INT                             0x0806
 #define HDMI_VP_MASK                            (HDMI_BASE + 0x0807)
 #define HDMI_VP_POL                             0x0808
 
 /* Frame Composer Registers */
-#define HDMI_FC_INVIDCONF                       0x1000
-#define HDMI_FC_INHACTV0                        0x1001
-#define HDMI_FC_INHACTV1                        0x1002
-#define HDMI_FC_INHBLANK0                       0x1003
-#define HDMI_FC_INHBLANK1                       0x1004
-#define HDMI_FC_INVACTV0                        0x1005
-#define HDMI_FC_INVACTV1                        0x1006
-#define HDMI_FC_INVBLANK                        0x1007
-#define HDMI_FC_HSYNCINDELAY0                   0x1008
-#define HDMI_FC_HSYNCINDELAY1                   0x1009
-#define HDMI_FC_HSYNCINWIDTH0                   0x100A
-#define HDMI_FC_HSYNCINWIDTH1                   0x100B
-#define HDMI_FC_VSYNCINDELAY                    0x100C
-#define HDMI_FC_VSYNCINWIDTH                    0x100D
+#define HDMI_FC_INVIDCONF                       (HDMI_BASE + 0x1000)
+#define HDMI_FC_INHACTV0                        (HDMI_BASE + 0x1001)
+#define HDMI_FC_INHACTV1                        (HDMI_BASE + 0x1002)
+#define HDMI_FC_INHBLANK0                       (HDMI_BASE + 0x1003)
+#define HDMI_FC_INHBLANK1                       (HDMI_BASE + 0x1004)
+#define HDMI_FC_INVACTV0                        (HDMI_BASE + 0x1005)
+#define HDMI_FC_INVACTV1                        (HDMI_BASE + 0x1006)
+#define HDMI_FC_INVBLANK                        (HDMI_BASE + 0x1007)
+#define HDMI_FC_HSYNCINDELAY0                   (HDMI_BASE + 0x1008)
+#define HDMI_FC_HSYNCINDELAY1                   (HDMI_BASE + 0x1009)
+#define HDMI_FC_HSYNCINWIDTH0                   (HDMI_BASE + 0x100A)
+#define HDMI_FC_HSYNCINWIDTH1                   (HDMI_BASE + 0x100B)
+#define HDMI_FC_VSYNCINDELAY                    (HDMI_BASE + 0x100C)
+#define HDMI_FC_VSYNCINWIDTH                    (HDMI_BASE + 0x100D)
 #define HDMI_FC_INFREQ0                         0x100E
 #define HDMI_FC_INFREQ1                         0x100F
 #define HDMI_FC_INFREQ2                         0x1010
-#define HDMI_FC_CTRLDUR                         0x1011
-#define HDMI_FC_EXCTRLDUR                       0x1012
-#define HDMI_FC_EXCTRLSPAC                      0x1013
-#define HDMI_FC_CH0PREAM                        0x1014
-#define HDMI_FC_CH1PREAM                        0x1015
-#define HDMI_FC_CH2PREAM                        0x1016
+#define HDMI_FC_CTRLDUR                         (HDMI_BASE + 0x1011)
+#define HDMI_FC_EXCTRLDUR                       (HDMI_BASE + 0x1012)
+#define HDMI_FC_EXCTRLSPAC                      (HDMI_BASE + 0x1013)
+#define HDMI_FC_CH0PREAM                        (HDMI_BASE + 0x1014)
+#define HDMI_FC_CH1PREAM                        (HDMI_BASE + 0x1015)
+#define HDMI_FC_CH2PREAM                        (HDMI_BASE + 0x1016)
 #define HDMI_FC_AVICONF3                        0x1017
 #define HDMI_FC_GCP                             0x1018
 #define HDMI_FC_AVICONF0                        0x1019
@@ -356,7 +356,7 @@
 #define HDMI_FC_DATAUTO1                        0x10B4
 #define HDMI_FC_DATAUTO2                        0x10B5
 #define HDMI_FC_DATMAN                          0x10B6
-#define HDMI_FC_DATAUTO3                        0x10B7
+#define HDMI_FC_DATAUTO3                        (HDMI_BASE + 0x10B7)
 #define HDMI_FC_RDRB0                           0x10B8
 #define HDMI_FC_RDRB1                           0x10B9
 #define HDMI_FC_RDRB2                           0x10BA
@@ -539,17 +539,47 @@
 
 /* Main Controller Registers */
 #define HDMI_MC_SFRDIV                          0x4000
-#define HDMI_MC_CLKDIS                          0x4001
-#define HDMI_MC_SWRSTZ                          0x4002
+#define HDMI_MC_CLKDIS                          (HDMI_BASE + 0x4001)
+#define HDMI_MC_SWRSTZ                          (HDMI_BASE + 0x4002)
 #define HDMI_MC_OPCTRL                          0x4003
-#define HDMI_MC_FLOWCTRL                        0x4004
+#define HDMI_MC_FLOWCTRL                        (HDMI_BASE + 0x4004)
 #define HDMI_MC_PHYRSTZ                         (HDMI_BASE + 0x4005)
 #define HDMI_MC_LOCKONCLOCK                     0x4006
 #define HDMI_MC_HEACPHY_RST                     (HDMI_BASE + 0x4007)
 
+
+/* Color Space  Converter Registers */
+#define HDMI_CSC_CFG                            (HDMI_BASE + 0x4100)
+#define HDMI_CSC_SCALE                          (HDMI_BASE + 0x4101)
+#define HDMI_CSC_COEF_A1_MSB                    0x4102
+#define HDMI_CSC_COEF_A1_LSB                    0x4103
+#define HDMI_CSC_COEF_A2_MSB                    0x4104
+#define HDMI_CSC_COEF_A2_LSB                    0x4105
+#define HDMI_CSC_COEF_A3_MSB                    0x4106
+#define HDMI_CSC_COEF_A3_LSB                    0x4107
+#define HDMI_CSC_COEF_A4_MSB                    0x4108
+#define HDMI_CSC_COEF_A4_LSB                    0x4109
+#define HDMI_CSC_COEF_B1_MSB                    0x410A
+#define HDMI_CSC_COEF_B1_LSB                    0x410B
+#define HDMI_CSC_COEF_B2_MSB                    0x410C
+#define HDMI_CSC_COEF_B2_LSB                    0x410D
+#define HDMI_CSC_COEF_B3_MSB                    0x410E
+#define HDMI_CSC_COEF_B3_LSB                    0x410F
+#define HDMI_CSC_COEF_B4_MSB                    0x4110
+#define HDMI_CSC_COEF_B4_LSB                    0x4111
+#define HDMI_CSC_COEF_C1_MSB                    0x4112
+#define HDMI_CSC_COEF_C1_LSB                    0x4113
+#define HDMI_CSC_COEF_C2_MSB                    0x4114
+#define HDMI_CSC_COEF_C2_LSB                    0x4115
+#define HDMI_CSC_COEF_C3_MSB                    0x4116
+#define HDMI_CSC_COEF_C3_LSB                    0x4117
+#define HDMI_CSC_COEF_C4_MSB                    0x4118
+#define HDMI_CSC_COEF_C4_LSB                    0x4119
+
+
 /* HDCP Encryption Engine Registers */
-#define HDMI_A_HDCPCFG0                         0x5000
-#define HDMI_A_HDCPCFG1                         0x5001
+#define HDMI_A_HDCPCFG0                         (HDMI_BASE + 0x5000)
+#define HDMI_A_HDCPCFG1                         (HDMI_BASE + 0x5001)
 #define HDMI_A_HDCPOBS0                         0x5002
 #define HDMI_A_HDCPOBS1                         0x5003
 #define HDMI_A_HDCPOBS2                         0x5004
@@ -557,7 +587,7 @@
 #define HDMI_A_APIINTCLR                        0x5006
 #define HDMI_A_APIINTSTAT                       0x5007
 #define HDMI_A_APIINTMSK                        (HDMI_BASE + 0x5008)
-#define HDMI_A_VIDPOLCFG                        0x5009
+#define HDMI_A_VIDPOLCFG                        (HDMI_BASE + 0x5009)
 #define HDMI_A_OESSWCFG                         0x500A
 #define HDMI_A_TIMER1SETUP0                     0x500B
 #define HDMI_A_TIMER1SETUP1                     0x500C
