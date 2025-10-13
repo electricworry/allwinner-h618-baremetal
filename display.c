@@ -707,7 +707,6 @@ void display_configure(void) {
     // START sunxi_engine_mode_set()/sun8i_mixer_mode_set()
     SUN50I_MIXER_GLOBAL_SIZE = SUN8I_MIXER_SIZE(800, 480);
     SUN8I_MIXER_BLEND_OUTSIZE = SUN8I_MIXER_SIZE(800, 480);
-
 	if (0) /* interlaced */
 		val = SUN8I_MIXER_BLEND_OUTCTL_INTERLACED;
 	else
@@ -741,157 +740,108 @@ void display_configure(void) {
         // END sun4i_tcon_channel_set_status
     // END sun4i_tcon_set_status - enable
 
+    /* START dw_hdmi_bridge_atomic_enable */
+        /* START dw_hdmi_update_power */
+            /* START dw_hdmi_poweron */
+                /* START dw_hdmi_setup */ /// TODO GET THIS IMPLEMENTED
+                    // hdmi_disable_overflow_interrupts
 
-
-    // START dw_hdmi_bridge_atomic_enable
-        // START dw_hdmi_update_power
-            // START dw_hdmi_poweron
-                // START dw_hdmi_setup !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                	/* HDMI Initialization Step B.1 */
                     // hdmi_av_composer
+
+                    /* HDMI Initializateion Step B.2 */
+                    /* START dw_hdmi_phy_init() */
+                        /* HDMI Phy spec says to do the phy initialization sequence twice */
+                        for (int xxx=0; xxx < 2; xxx++) {
+                        // dw_hdmi_phy_sel_data_en_pol()
+                        writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_SELDATAENPOL_OFFSET, HDMI_PHY_CONF0_SELDATAENPOL_MASK);
+                        // dw_hdmi_phy_sel_interface_control()
+                        writeb_mask(0, HDMI_PHY_CONF0, HDMI_PHY_CONF0_SELDIPIF_OFFSET, HDMI_PHY_CONF0_SELDIPIF_MASK);
+                        // hdmi_phy_configure()
+                            // dw_hdmi_phy_power_off()
+                            writeb_mask(0, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_TXPWRON_OFFSET, HDMI_PHY_CONF0_GEN2_TXPWRON_MASK);
+                            /*
+                            * Wait for TX_PHY_LOCK to be deasserted to indicate that the PHY went
+                            * to low power mode.
+                            */
+                            for (i = 0; i < 5; ++i) {
+                                printf("LOOP1\n");
+                                bval = readb(HDMI_PHY_STAT0);
+                                if (!(bval & HDMI_PHY_TX_PHY_LOCK))
+                                    break;
+                                udelay(2000);
+                            }
+                            writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_PDDQ_OFFSET, HDMI_PHY_CONF0_GEN2_PDDQ_MASK);
+                            // SKIP dw_hdmi_set_high_tmds_clock_ratio() don't care
+                            /* Leave low power consumption mode by asserting SVSRET. */
+                            writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_SVSRET_OFFSET, HDMI_PHY_CONF0_SVSRET_MASK);
+                            /* PHY reset. The reset signal is active high on Gen2 PHYs. */
+                            writeb(HDMI_MC_PHYRSTZ_PHYRSTZ, HDMI_MC_PHYRSTZ);
+                            writeb(0, HDMI_MC_PHYRSTZ);
+                            writeb(HDMI_MC_HEACPHY_RST_ASSERT, HDMI_MC_HEACPHY_RST);
+                            writeb_mask(1 << HDMI_PHY_TST0_TSTCLR_OFFSET, HDMI_PHY_TST0, HDMI_PHY_TST0_TSTCLK_OFFSET, HDMI_PHY_TST0_TSTCLR_MASK);
+                            writeb(HDMI_PHY_I2CM_SLAVE_ADDR_PHY_GEN2, HDMI_PHY_I2CM_SLAVE_ADDR);
+                            /* Write to the PHY as configured by the platform */
+                                // hdmi_phy_configure_dwc_hdmi_3d_tx - TODO these need to be set based on the pixelclock
+                                unsigned long mpixelclock = 108000000;
+                                dw_hdmi_phy_i2c_write(0x0051, HDMI_3D_TX_PHY_CPCE_CTRL);
+                                dw_hdmi_phy_i2c_write(0x0003,
+                                            HDMI_3D_TX_PHY_GMPCTRL);
+                                dw_hdmi_phy_i2c_write(0x0019,
+                                            HDMI_3D_TX_PHY_CURRCTRL);
+
+                                dw_hdmi_phy_i2c_write(0, HDMI_3D_TX_PHY_PLLPHBYCTRL);
+                                dw_hdmi_phy_i2c_write(HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_FB_CLK,
+                                            HDMI_3D_TX_PHY_MSM_CTRL);
+
+                                dw_hdmi_phy_i2c_write(0x0004, HDMI_3D_TX_PHY_TXTERM);
+                                dw_hdmi_phy_i2c_write(0x8019,
+                                            HDMI_3D_TX_PHY_CKSYMTXCTRL);
+                                dw_hdmi_phy_i2c_write(0x0290,
+                                            HDMI_3D_TX_PHY_VLEVCTRL);
+                                /* Override and disable clock termination. */
+                                dw_hdmi_phy_i2c_write(HDMI_3D_TX_PHY_CKCALCTRL_OVERRIDE,
+                                            HDMI_3D_TX_PHY_CKCALCTRL);
+                            // dw_hdmi_phy_power_on
+                            writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_TXPWRON_OFFSET, HDMI_PHY_CONF0_GEN2_TXPWRON_MASK);
+                            writeb_mask(0, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_PDDQ_OFFSET, HDMI_PHY_CONF0_GEN2_PDDQ_MASK);
+                            /* Wait for PHY PLL lock */
+                            for (i = 0; i < 50; ++i) {
+                                bval = readb(HDMI_PHY_STAT0) & HDMI_PHY_TX_PHY_LOCK;
+                                if (bval){
+                                    printf("BOOO\n");
+                                    break;
+                                }
+                                printf("LOOP2 %x\n", bval);
+                                udelay(2000);
+                            }
+                        }
+                    /* END dw_hdmi_phy_init() */
+
+	                /* HDMI Initialization Step B.3 */
                     // dw_hdmi_enable_video_path
-        // dw_hdmi_update_phy_mask
+
+                    /* SKIP HDMI Initialization Step E - Configure audio */
+
+                    /* HDMI Initialization Step F - Configure AVI InfoFrame */
+
+                    // Final trailing calls
+
+                /* END dw_hdmi_setup */
+            /* END dw_hdmi_poweron */
+        /* END dw_hdmi_update_power */
+        /* SKIP dw_hdmi_update_phy_mask */ // <- With breakpoint here, screen has gone red. Which is good test for baremetal, as I set it as background colour.
+    /* END dw_hdmi_bridge_atomic_enable */
+
+    // sun8i_ui_layer_atomic_update
+    // sun8i_vi_layer_atomic_update
+    // TODO ETC
+
+
+
+
 
     
-    /* START dw_hdmi_phy_init() */
-	    /* HDMI Phy spec says to do the phy initialization sequence twice */
-        for (int xxx=0; xxx < 2; xxx++) {
-        // dw_hdmi_phy_sel_data_en_pol()
-        writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_SELDATAENPOL_OFFSET, HDMI_PHY_CONF0_SELDATAENPOL_MASK);
-        // dw_hdmi_phy_sel_interface_control()
-        writeb_mask(0, HDMI_PHY_CONF0, HDMI_PHY_CONF0_SELDIPIF_OFFSET, HDMI_PHY_CONF0_SELDIPIF_MASK);
-        // hdmi_phy_configure()
-            // dw_hdmi_phy_power_off()
-            writeb_mask(0, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_TXPWRON_OFFSET, HDMI_PHY_CONF0_GEN2_TXPWRON_MASK);
-            /*
-            * Wait for TX_PHY_LOCK to be deasserted to indicate that the PHY went
-            * to low power mode.
-            */
-            for (i = 0; i < 5; ++i) {
-                printf("LOOP1\n");
-                bval = readb(HDMI_PHY_STAT0);
-                if (!(bval & HDMI_PHY_TX_PHY_LOCK))
-                    break;
-                udelay(2000);
-            }
-            writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_PDDQ_OFFSET, HDMI_PHY_CONF0_GEN2_PDDQ_MASK);
-            // SKIP dw_hdmi_set_high_tmds_clock_ratio() don't care
-	        /* Leave low power consumption mode by asserting SVSRET. */
-            writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_SVSRET_OFFSET, HDMI_PHY_CONF0_SVSRET_MASK);
-            /* PHY reset. The reset signal is active high on Gen2 PHYs. */
-            writeb(HDMI_MC_PHYRSTZ_PHYRSTZ, HDMI_MC_PHYRSTZ);
-            writeb(0, HDMI_MC_PHYRSTZ);
-	        writeb(HDMI_MC_HEACPHY_RST_ASSERT, HDMI_MC_HEACPHY_RST);
-            writeb_mask(1 << HDMI_PHY_TST0_TSTCLR_OFFSET, HDMI_PHY_TST0, HDMI_PHY_TST0_TSTCLK_OFFSET, HDMI_PHY_TST0_TSTCLR_MASK);
-	        writeb(HDMI_PHY_I2CM_SLAVE_ADDR_PHY_GEN2, HDMI_PHY_I2CM_SLAVE_ADDR);
-	        /* Write to the PHY as configured by the platform */
-                // hdmi_phy_configure_dwc_hdmi_3d_tx - TODO these need to be set based on the pixelclock
-                unsigned long mpixelclock = 108000000;
-                dw_hdmi_phy_i2c_write(0x0051, HDMI_3D_TX_PHY_CPCE_CTRL);
-                dw_hdmi_phy_i2c_write(0x0003,
-                            HDMI_3D_TX_PHY_GMPCTRL);
-                dw_hdmi_phy_i2c_write(0x0019,
-                            HDMI_3D_TX_PHY_CURRCTRL);
-
-                dw_hdmi_phy_i2c_write(0, HDMI_3D_TX_PHY_PLLPHBYCTRL);
-                dw_hdmi_phy_i2c_write(HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_FB_CLK,
-                            HDMI_3D_TX_PHY_MSM_CTRL);
-
-                dw_hdmi_phy_i2c_write(0x0004, HDMI_3D_TX_PHY_TXTERM);
-                dw_hdmi_phy_i2c_write(0x8019,
-                            HDMI_3D_TX_PHY_CKSYMTXCTRL);
-                dw_hdmi_phy_i2c_write(0x0290,
-                            HDMI_3D_TX_PHY_VLEVCTRL);
-                /* Override and disable clock termination. */
-                dw_hdmi_phy_i2c_write(HDMI_3D_TX_PHY_CKCALCTRL_OVERRIDE,
-                            HDMI_3D_TX_PHY_CKCALCTRL);
-            // dw_hdmi_phy_power_on
-            writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_TXPWRON_OFFSET, HDMI_PHY_CONF0_GEN2_TXPWRON_MASK);
-            writeb_mask(0, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_PDDQ_OFFSET, HDMI_PHY_CONF0_GEN2_PDDQ_MASK);
-	        /* Wait for PHY PLL lock */
-            for (i = 0; i < 50; ++i) {
-                bval = readb(HDMI_PHY_STAT0) & HDMI_PHY_TX_PHY_LOCK;
-                if (bval){
-                    printf("BOOO\n");
-                    break;
-                }
-                printf("LOOP2 %x\n", bval);
-                udelay(2000);
-            }
-        }
-    /* END dw_hdmi_phy_init() */
-
-
-
-
-
-
-
-    // drm_client_setup
-        // drm_fbdev_client_setup
-            // drm_client_register
-                // drm_fbdev_client_hotplug
-                    // drm_fb_helper_initial_config
-                        // __drm_fb_helper_initial_config_and_unlock <-- happens here
-                            //drm_client_modeset_probe
-                                // drm_helper_probe_single_connector_modes <-- gets display modes. Also adds 1024x768 if no edid! And a cmdline mode if specified
-                                // __drm_helper_update_and_validate - Validates modes against the connector (e.g. is interlace allowed?)
-                            // drm_fb_helper_single_fb_probe - Not interesting?
-                            // drm_setup_crtcs_fb - Nothing interesting
-                            // register_framebuffer/do_register_framebuffer
-                                // fb_device_create()    ????
-                                // Allocate pixmap       ????
-                                // fb_var_to_videomode() ????
-                                // fb_add_videomode()    ????
-                                // fbcon_fb_registered()/do_fb_registered() (BOOM!)
-                                    // do_fbcon_takeover()
-                                        // do_take_over_console
-                                            //do_bind_con_driver
-                                                // visual_init
-                                                    // con_init(fbcon_init)
-                                                        //...
-                                                        // drm_client_modeset_commit_atomic - SETS UP PLANES AND MODESET <-- suggest debug from here!
-                                                            // drm_atomic_commit BOOM!
-                                        
-    /* START drm_atomic_commit() */
-        // sun4i_de_atomic_check
-            // drm_atomic_helper_check_modeset
-                // dw_hdmi_connector_atomic_check
-                // mode_fixup
-                    // drm_atomic_bridge_chain_check
-                        // drm_atomic_bridge_chain_select_bus_fmts
-                            // dw_hdmi_bridge_atomic_get_output_bus_fmts - Decides on the fmt
-                            // dw_hdmi_bridge_atomic_get_input_bus_fmts  - Decides on the fmt
-            // drm_atomic_helper_check_planes
-                // sun4i_crtc_atomic_check
-        // So far so uninteresting...
-        /* drm_atomic_helper_commit - Things rapidly go batshit here. Here's the callstack:
-#0  sun4i_crtc_mode_set_nofb (crtc=0xffff0000c0967080) at drivers/gpu/drm/sun4i/sun4i_crtc.c:143
-#1  0xffff800080a77ebc in crtc_set_mode (dev=dev@entry=0xffff0000c0966000, state=state@entry=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1398
-#2  0xffff800080a7ba34 in drm_atomic_helper_commit_modeset_disables (dev=0xffff0000c0966000, state=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1461
-#3  drm_atomic_helper_commit_tail_rpm (state=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1816
-#4  0xffff800080a7bf90 in commit_tail (state=state@entry=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1871
-#5  0xffff800080a7d20c in drm_atomic_helper_commit (dev=0xffff0000c0966000, state=0xffff0000c1079d00, nonblock=false) at drivers/gpu/drm/drm_atomic_helper.c:2111
-        */
-
-    /* dw_hdmi_phy_power_on() - The display syncs here! */
-       
-
-    // We must set the "tmds" <&ccu CLK_HDMI> to the pixelclock (108MHz)
-    // static const char * const hdmi_parents[] = { "pll-video0", "pll-video0-4x",
-	// 				     "pll-video2", "pll-video2-4x" };
-    // static SUNXI_CCU_M_WITH_MUX_GATE(hdmi_clk, "hdmi", hdmi_parents, 0xb00,
-    //                 0, 4,		/* M */
-    //                 24, 2,		/* mux */
-    //                 BIT(31),	/* gate */
-    //                 0);
-    // These clock registers have the following implementation:
-    // M or Factor M is a dividing factor. Here bits 3:0 are M.
-    // Bits 25:24 are a mux, between four parent clocks. PLL_VIDEO0(1X), PLL_VIDEO0(4X), PLL_VIDEO2(1X), PLL_VIDEO2(4X)
-
-
-
-    // Skipping ahead a little...
-
 }
 
 /*  This function attempts to get graphics working.

@@ -527,4 +527,68 @@ To see what this clock is, print `clk->core->hw`. This will show the actual cloc
     // Back in dw_hdmi_setup()...
 
     /* SKIPPED HDMI Initialization Step E - Configure audio */
+
+
+
+
+    // drm_client_setup
+        // drm_fbdev_client_setup
+            // drm_client_register
+                // drm_fbdev_client_hotplug
+                    // drm_fb_helper_initial_config
+                        // __drm_fb_helper_initial_config_and_unlock <-- happens here
+                            //drm_client_modeset_probe
+                                // drm_helper_probe_single_connector_modes <-- gets display modes. Also adds 1024x768 if no edid! And a cmdline mode if specified
+                                // __drm_helper_update_and_validate - Validates modes against the connector (e.g. is interlace allowed?)
+                            // drm_fb_helper_single_fb_probe - Not interesting?
+                            // drm_setup_crtcs_fb - Nothing interesting
+                            // register_framebuffer/do_register_framebuffer
+                                // fb_device_create()    ????
+                                // Allocate pixmap       ????
+                                // fb_var_to_videomode() ????
+                                // fb_add_videomode()    ????
+                                // fbcon_fb_registered()/do_fb_registered() (BOOM!)
+                                    // do_fbcon_takeover()
+                                        // do_take_over_console
+                                            //do_bind_con_driver
+                                                // visual_init
+                                                    // con_init(fbcon_init)
+                                                        //...
+                                                        // drm_client_modeset_commit_atomic - SETS UP PLANES AND MODESET <-- suggest debug from here!
+                                                            // drm_atomic_commit BOOM!
+                                        
+    /* START drm_atomic_commit() */
+        // sun4i_de_atomic_check
+            // drm_atomic_helper_check_modeset
+                // dw_hdmi_connector_atomic_check
+                // mode_fixup
+                    // drm_atomic_bridge_chain_check
+                        // drm_atomic_bridge_chain_select_bus_fmts
+                            // dw_hdmi_bridge_atomic_get_output_bus_fmts - Decides on the fmt
+                            // dw_hdmi_bridge_atomic_get_input_bus_fmts  - Decides on the fmt
+            // drm_atomic_helper_check_planes
+                // sun4i_crtc_atomic_check
+        // So far so uninteresting...
+        /* drm_atomic_helper_commit - Things rapidly go batshit here. Here's the callstack:
+#0  sun4i_crtc_mode_set_nofb (crtc=0xffff0000c0967080) at drivers/gpu/drm/sun4i/sun4i_crtc.c:143
+#1  0xffff800080a77ebc in crtc_set_mode (dev=dev@entry=0xffff0000c0966000, state=state@entry=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1398
+#2  0xffff800080a7ba34 in drm_atomic_helper_commit_modeset_disables (dev=0xffff0000c0966000, state=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1461
+#3  drm_atomic_helper_commit_tail_rpm (state=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1816
+#4  0xffff800080a7bf90 in commit_tail (state=state@entry=0xffff0000c1079d00) at drivers/gpu/drm/drm_atomic_helper.c:1871
+#5  0xffff800080a7d20c in drm_atomic_helper_commit (dev=0xffff0000c0966000, state=0xffff0000c1079d00, nonblock=false) at drivers/gpu/drm/drm_atomic_helper.c:2111
+        */
+
+    /* dw_hdmi_phy_power_on() - The display syncs here! */
+       
+    // We must set the "tmds" <&ccu CLK_HDMI> to the pixelclock (108MHz)
+    // static const char * const hdmi_parents[] = { "pll-video0", "pll-video0-4x",
+	// 				     "pll-video2", "pll-video2-4x" };
+    // static SUNXI_CCU_M_WITH_MUX_GATE(hdmi_clk, "hdmi", hdmi_parents, 0xb00,
+    //                 0, 4,		/* M */
+    //                 24, 2,		/* mux */
+    //                 BIT(31),	/* gate */
+    //                 0);
+    // These clock registers have the following implementation:
+    // M or Factor M is a dividing factor. Here bits 3:0 are M.
+    // Bits 25:24 are a mux, between four parent clocks. PLL_VIDEO0(1X), PLL_VIDEO0(4X), PLL_VIDEO2(1X), PLL_VIDEO2(4X)
 ```
