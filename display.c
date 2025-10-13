@@ -852,7 +852,7 @@ void display_configure(void) {
                                 udelay(2000);
                             }
                         }
-                    /* END dw_hdmi_phy_init() */
+                    /* END dw_hdmi_phy_init() */  // Screen does deep black here!, not muddy
 
 	                /* HDMI Initialization Step B.3 */
                     /* START dw_hdmi_enable_video_path */
@@ -875,6 +875,7 @@ void display_configure(void) {
                                 HDMI_MC_CLKDIS_TMDSCLK_DISABLE;
                         mc_clkdis &= ~HDMI_MC_CLKDIS_PIXELCLK_DISABLE;
                         writeb(mc_clkdis, HDMI_MC_CLKDIS);
+                    // return;
 
                         mc_clkdis &= ~HDMI_MC_CLKDIS_TMDSCLK_DISABLE;
                         writeb(mc_clkdis, HDMI_MC_CLKDIS);
@@ -893,7 +894,8 @@ void display_configure(void) {
                             writeb(HDMI_MC_FLOWCTRL_FEED_THROUGH_OFF_CSC_BYPASS,
                                     HDMI_MC_FLOWCTRL);
                         }
-                    /* END dw_hdmi_enable_video_path */
+                    /* END dw_hdmi_enable_video_path */   // Screen goes deep red here! (But in mine it's muddy brown)
+                    // return;
 
                     /* SKIP HDMI Initialization Step E - Configure audio */
 
@@ -1028,6 +1030,9 @@ void display_configure(void) {
     // sun8i_vi_layer_atomic_update
     // TODO ETC
 
+    // sun8i_vi_scaler_disable
+	// base = sun8i_vi_scaler_base(mixer, layer);
+	// regmap_write(mixer->engine.regs, SUN8I_SCALER_VSU_CTRL(base), 0);
 
 
 

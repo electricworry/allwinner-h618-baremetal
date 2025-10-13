@@ -36,7 +36,8 @@
 #define DE2_BLD_BASE 0x1000 /* Blender Base */
 #define SUN8I_MIXER_BLEND_BKCOLOR	*(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x88)
 /* colors are always in AARRGGBB format TODO: Make black */
-#define SUN8I_MIXER_BLEND_COLOR_BLACK		0xffff0000
+#define SUN8I_MIXER_BLEND_COLOR_BLACK		0xff4e8a1f
+// #define SUN8I_MIXER_BLEND_COLOR_BLACK		0xffff0000
 #define SUN8I_MIXER_BLEND_PIPE_CTL  *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x0)
 #define SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(pipe)	BIT(pipe)
 #define SUN8I_MIXER_BLEND_ATTR_FCOLOR(x)	*(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x04 + 0x10 * (x))
