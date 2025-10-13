@@ -416,6 +416,9 @@ void display_configure(void) {
         // START sun4i_crtc_init()
         // This creates and initialises the CRTC.
         // TODO! This initialises layers (see mixer) and is critical
+
+                // sun8i_layers_init - Creates one video layer and 3 ui layers.
+
         // END sun4i_crtc_init()
     SUN4I_TCON_GCTL_REG |= SUN4I_TCON_GCTL_PAD_SEL;
     /* END TCON_TV allwinner,sun8i-r40-tcon-tv drivers/gpu/drm/sun4i/sun4i_tcon.c:sun4i_tcon_bind() */
@@ -591,10 +594,10 @@ void display_configure(void) {
         // Clock has no op for set clk, but need to propagate to parents.
         // Parent: pll-video0 pll-video0-4x pll-video1 pll-video1-4x
         // The algorithm decides to set pll_video0_clk to 96MHz
-        /* 1: pll-video0, set to 96MHz, parent=24MHz
-        FIXED_POST_DIV=4, so actually 384MHz
-        N=16, PLL_FACTOR_N=15 (bits 15:8)
-        M=1, PLL_INPUT_DIV_M=0 (bits 1)
+        /* 1: pll-video0, want 96MHz/108MHz, parent=24MHz
+        FIXED_POST_DIV=4, so actually want 384MHz/432MHz
+        N=16, PLL_FACTOR_N=15 (bits 15:8) / N=18, FACTOR_N=17
+        M=1, PLL_INPUT_DIV_M=0 (bits 1) / Ditto
         */
         val = SUN50I_H616_CCU_PLL_VIDEO0_REG;
         val &= ~(GENMASK(15, 8) | BIT(1));
@@ -739,13 +742,19 @@ void display_configure(void) {
     // END sun4i_tcon_set_status - enable
 
 
-    // 1: dw_hdmi_update_power
 
-
+    // START dw_hdmi_bridge_atomic_enable
+        // START dw_hdmi_update_power
+            // START dw_hdmi_poweron
+                // START dw_hdmi_setup !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    // hdmi_av_composer
+                    // dw_hdmi_enable_video_path
+        // dw_hdmi_update_phy_mask
 
     
     /* START dw_hdmi_phy_init() */
-	    /* TODO HDMI Phy spec says to do the phy initialization sequence twice */
+	    /* HDMI Phy spec says to do the phy initialization sequence twice */
+        for (int xxx=0; xxx < 2; xxx++) {
         // dw_hdmi_phy_sel_data_en_pol()
         writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_SELDATAENPOL_OFFSET, HDMI_PHY_CONF0_SELDATAENPOL_MASK);
         // dw_hdmi_phy_sel_interface_control()
@@ -775,7 +784,7 @@ void display_configure(void) {
             writeb_mask(1 << HDMI_PHY_TST0_TSTCLR_OFFSET, HDMI_PHY_TST0, HDMI_PHY_TST0_TSTCLK_OFFSET, HDMI_PHY_TST0_TSTCLR_MASK);
 	        writeb(HDMI_PHY_I2CM_SLAVE_ADDR_PHY_GEN2, HDMI_PHY_I2CM_SLAVE_ADDR);
 	        /* Write to the PHY as configured by the platform */
-                // hdmi_phy_configure_dwc_hdmi_3d_tx
+                // hdmi_phy_configure_dwc_hdmi_3d_tx - TODO these need to be set based on the pixelclock
                 unsigned long mpixelclock = 108000000;
                 dw_hdmi_phy_i2c_write(0x0051, HDMI_3D_TX_PHY_CPCE_CTRL);
                 dw_hdmi_phy_i2c_write(0x0003,
@@ -808,6 +817,7 @@ void display_configure(void) {
                 printf("LOOP2 %x\n", bval);
                 udelay(2000);
             }
+        }
     /* END dw_hdmi_phy_init() */
 
 
@@ -879,11 +889,6 @@ void display_configure(void) {
     // Bits 25:24 are a mux, between four parent clocks. PLL_VIDEO0(1X), PLL_VIDEO0(4X), PLL_VIDEO2(1X), PLL_VIDEO2(4X)
 
 
-
-    // START dw_hdmi_bridge_atomic_enable
-        // START dw_hdmi_update_power
-            // START dw_hdmi_poweron
-                // START dw_hdmi_setup !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // Skipping ahead a little...
 
