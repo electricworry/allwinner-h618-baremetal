@@ -48,7 +48,7 @@ static void writeb_mask(uint8_t data, uint64_t reg,
 {
     uint8_t val = *(uint8_t *)(reg);
     val &= ~mask;
-    val |= (data << shift);
+    val |= (mask & (data << shift));
     *(uint8_t *)(reg) = val;
 }
 
@@ -532,10 +532,10 @@ void display_configure(void) {
                     writeb(HDMI_IH_I2CM_STAT0_ERROR | HDMI_IH_I2CM_STAT0_DONE,
                             HDMI_IH_MUTE_I2CM_STAT0);
                     // END dw_hdmi_i2c_init()
-                    /* SKIP dw_hdmi_phy_setup_hpd() - TODO I'm not interested in hotplug events? */
+                    /* SKIP dw_hdmi_phy_setup_hpd() - TODOTODO I'm not interested in hotplug events? */
                 /* END dw_hdmi_init_hw() */
-            /* TODO Skipping IRQ setup - Although in this, dw_hdmi_update_power is called. */
-            /* SKIP hdmi_init_clk_regenerator() - TODO It called hdmi_set_clk_regenerator() and hdmi_set_cts_n() but had no effect in my testing. It's just audio stuff? */
+            /* TODOTODO Skipping IRQ setup - Although in this, dw_hdmi_update_power is called. */
+            /* SKIP hdmi_init_clk_regenerator() - TODOTODO It called hdmi_set_clk_regenerator() and hdmi_set_cts_n() but had no effect in my testing. It's just audio stuff? */
             /* SKIP Further setup skipped. 2 registers are read to configure the driver capabilities. I don't think we care. */
             /* END HDMI drivers/gpu/drm/bridge/synopsys/dw-hdmi.c dw_hdmi_probe() */
         /* SKIP drm_bridge_add() call causes calls into dw_hdmi_bridge_attach()/dw_hdmi_connector_create() TODO: This might actually do something*/
@@ -556,9 +556,9 @@ void display_configure(void) {
        functions that it calls into...
     */
 
-
     // BEGIN dw_hdmi_connector_get_modes()
         // BEGIN dw_hdmi_edid_read()/dw_hdmi_i2c_xfer()
+        // TODOTODO why does this also do a write?
         /* This little widget gets called when sun4i_drv_bind calls into drm_client_setup
             and the whole Linux DRM framebuffer thing runs.
         */
@@ -639,11 +639,11 @@ void display_configure(void) {
         val |= (0 << 0);
         SUN50I_H616_CCU_HDMI0_CLK_REG = val;
 	    /* Adjust clock delay */
-        // clk_delay = 45
+        // clk_delay = 30
         val = SUN4I_TCON1_CTL_REG & ~SUN4I_TCON1_CTL_CLK_DELAY_MASK;
-        val |= SUN4I_TCON1_CTL_CLK_DELAY(45);
+        val |= SUN4I_TCON1_CTL_CLK_DELAY(30);
         SUN4I_TCON1_CTL_REG = val;
-	    /* Set interlaced mode */
+	    /* TODOTODO Set interlaced mode */
 	    /* Set the input resolution */
         // regmap_write(tcon->regs, SUN4I_TCON1_BASIC0_REG,
         //         SUN4I_TCON1_BASIC0_X(mode->crtc_hdisplay / div) | 800
@@ -684,7 +684,11 @@ void display_configure(void) {
 	    /* Setup the polarity of multiple signals */
         // Quirk .polarity_in_ch0
         val = 0;
-        // If +ve, change
+		// if (mode->flags & DRM_MODE_FLAG_PHSYNC)
+		// 	val |= SUN4I_TCON0_IO_POL_HSYNC_POSITIVE;
+		// if (mode->flags & DRM_MODE_FLAG_PVSYNC)
+		// 	val |= SUN4I_TCON0_IO_POL_VSYNC_POSITIVE;
+
         SUN4I_TCON0_IO_POL_REG = val;
 	    /* Map output pins to channel 1 */
         val = SUN4I_TCON_GCTL_REG & ~SUN4I_TCON_GCTL_IOMAP_MASK;
@@ -696,7 +700,7 @@ void display_configure(void) {
             // BEGIN sun8i_tcon_top_set_hdmi_src()
             val = TCON_TOP_GATE_SRC_REG;
             val &= ~TCON_TOP_HDMI_SRC_MSK;
-            val |= (TCON_TOP_HDMI_SRC_MSK, (1 << 28)); // 1
+            val |= (1 << 28); // 1
             TCON_TOP_GATE_SRC_REG = val;
             // END sun8i_tcon_top_set_hdmi_src()
             // BEGIN sun8i_tcon_top_de_config()
@@ -733,6 +737,15 @@ void display_configure(void) {
         SUN50I_FMT_CTRL = 1;
         // END sun50i_fmt_setup()
     // FIN sunxi_engine_mode_set()/sun8i_mixer_mode_set()
+
+
+    /* hdmi-clk, set to 32MHz, parent=96MHz
+    M=3, FACTOR_M=2 (bits 3:0)
+    */
+    val = SUN50I_H616_CCU_HDMI0_CLK_REG;
+    val &= ~(GENMASK(3, 0));
+    val |= (2 << 0);
+    SUN50I_H616_CCU_HDMI0_CLK_REG = val;
 
     // BEGIN sun4i_tcon_set_status - enable
     // encoder type for HDMI is TMDS - channel = 1
@@ -817,15 +830,19 @@ void display_configure(void) {
                             writeb(HDMI_MC_PHYRSTZ_PHYRSTZ, HDMI_MC_PHYRSTZ);
                             writeb(0, HDMI_MC_PHYRSTZ);
                             writeb(HDMI_MC_HEACPHY_RST_ASSERT, HDMI_MC_HEACPHY_RST);
+
+                            // dw_hdmi_phy_i2c_set_addr
                             writeb_mask(1 << HDMI_PHY_TST0_TSTCLR_OFFSET, HDMI_PHY_TST0, HDMI_PHY_TST0_TSTCLK_OFFSET, HDMI_PHY_TST0_TSTCLR_MASK);
                             writeb(HDMI_PHY_I2CM_SLAVE_ADDR_PHY_GEN2, HDMI_PHY_I2CM_SLAVE_ADDR);
+                            writeb_mask(0, HDMI_PHY_TST0, HDMI_PHY_TST0_TSTCLK_OFFSET, HDMI_PHY_TST0_TSTCLR_MASK);
+
                             /* Write to the PHY as configured by the platform */
                                 // hdmi_phy_configure_dwc_hdmi_3d_tx - TODO these need to be set based on the pixelclock
-                                unsigned long mpixelclock = 108000000;
-                                dw_hdmi_phy_i2c_write(0x0051, HDMI_3D_TX_PHY_CPCE_CTRL);
+                                // mpixelclock = 32 MHz;
+                                dw_hdmi_phy_i2c_write(0x0072, HDMI_3D_TX_PHY_CPCE_CTRL);
                                 dw_hdmi_phy_i2c_write(0x0003,
                                             HDMI_3D_TX_PHY_GMPCTRL);
-                                dw_hdmi_phy_i2c_write(0x0019,
+                                dw_hdmi_phy_i2c_write(0x0013,
                                             HDMI_3D_TX_PHY_CURRCTRL);
 
                                 dw_hdmi_phy_i2c_write(0, HDMI_3D_TX_PHY_PLLPHBYCTRL);
@@ -844,10 +861,9 @@ void display_configure(void) {
                             writeb_mask(1, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_TXPWRON_OFFSET, HDMI_PHY_CONF0_GEN2_TXPWRON_MASK);
                             writeb_mask(0, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_PDDQ_OFFSET, HDMI_PHY_CONF0_GEN2_PDDQ_MASK);
                             /* Wait for PHY PLL lock */
-                            for (i = 0; i < 50; ++i) {
+                            for (i = 0; i < 5; ++i) {
                                 bval = readb(HDMI_PHY_STAT0) & HDMI_PHY_TX_PHY_LOCK;
                                 if (bval){
-                                    printf("BOOO\n");
                                     break;
                                 }
                                 printf("LOOP2 %x\n", bval);
@@ -855,6 +871,7 @@ void display_configure(void) {
                             }
                         }
                     /* END dw_hdmi_phy_init() */  // Screen does deep black here!, not muddy
+                    // return;
 
 	                /* HDMI Initialization Step B.3 */
                     /* START dw_hdmi_enable_video_path */
@@ -876,11 +893,43 @@ void display_configure(void) {
                                 HDMI_MC_CLKDIS_PREPCLK_DISABLE |
                                 HDMI_MC_CLKDIS_TMDSCLK_DISABLE;
                         mc_clkdis &= ~HDMI_MC_CLKDIS_PIXELCLK_DISABLE;
-                        writeb(mc_clkdis, HDMI_MC_CLKDIS);
-                    // return;
+                        udelay(1000000);
+                        writeb(mc_clkdis, HDMI_MC_CLKDIS); // 0x7e <---- screen turns off here
+                        udelay(1000000);
 
                         mc_clkdis &= ~HDMI_MC_CLKDIS_TMDSCLK_DISABLE;
-                        writeb(mc_clkdis, HDMI_MC_CLKDIS);
+                        writeb(mc_clkdis, HDMI_MC_CLKDIS); // 0x7c <--- should turn red here!
+                        udelay(1000000);
+                        // return;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                        
 
                         /* Enable csc (colour space conversion) path */
                         if (/*is_csc_needed(hdmi)*/ 0) {
@@ -891,13 +940,13 @@ void display_configure(void) {
                             //         HDMI_MC_FLOWCTRL);
                         } else {
                             mc_clkdis |= HDMI_MC_CLKDIS_CSCCLK_DISABLE;
-                            writeb(mc_clkdis, HDMI_MC_CLKDIS);
+                            // writeb(mc_clkdis, HDMI_MC_CLKDIS);
 
-                            writeb(HDMI_MC_FLOWCTRL_FEED_THROUGH_OFF_CSC_BYPASS,
-                                    HDMI_MC_FLOWCTRL);
+                            // writeb(HDMI_MC_FLOWCTRL_FEED_THROUGH_OFF_CSC_BYPASS,
+                            //         HDMI_MC_FLOWCTRL);
                         }
                     /* END dw_hdmi_enable_video_path */   // Screen goes deep red here! (But in mine it's muddy brown)
-                    // return;
+                    return;
 
                     /* SKIP HDMI Initialization Step E - Configure audio */
 
