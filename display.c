@@ -12,6 +12,7 @@ volatile uint32_t* active_buffer;
 volatile uint32_t framebuffer1[512*512] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t framebuffer2[512*512] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t framebuffer3[512*512] __attribute__ ((section ("UNCACHED")));
+volatile uint32_t framebufferz[800*480] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t waiting_for_irq = 0;
 
 #define HDMI_IH_PHY_STAT0_RX_SENSE \
@@ -555,6 +556,7 @@ void display_configure(void) {
        functions that it calls into...
     */
 
+
     // BEGIN dw_hdmi_connector_get_modes()
         // BEGIN dw_hdmi_edid_read()/dw_hdmi_i2c_xfer()
         /* This little widget gets called when sun4i_drv_bind calls into drm_client_setup
@@ -1026,13 +1028,41 @@ void display_configure(void) {
         /* SKIP dw_hdmi_update_phy_mask */ // <- With breakpoint here, screen has gone red. Which is good test for baremetal, as I set it as background colour.
     /* END dw_hdmi_bridge_atomic_enable */
 
-    // sun8i_ui_layer_atomic_update
-    // sun8i_vi_layer_atomic_update
-    // TODO ETC
 
-    // sun8i_vi_scaler_disable
-	// base = sun8i_vi_scaler_base(mixer, layer);
-	// regmap_write(mixer->engine.regs, SUN8I_SCALER_VSU_CTRL(base), 0);
+    // drm_atomic_helper_commit_planes
+        // sun8i_ui_layer_atomic_update
+            // sun8i_ui_layer_update_coord
+            // channel/layer = 1
+            // overlay = 0
+            SUN8I_MIXER_CHAN_UI_LAYER_SIZE(0) = 0x1DF031F; // insize
+            SUN8I_MIXER_CHAN_UI_OVL_SIZE = 0x1DF031F;
+            // No scaling required
+                // sun8i_vi_scaler_disable(mixer, 1)
+	            SUN8I_SCALER_VSU_CTRL = 0;
+            SUN8I_MIXER_BLEND_ATTR_COORD(0 /*zpos*/) = SUN8I_MIXER_COORD(0, 0);
+            SUN8I_MIXER_BLEND_ATTR_INSIZE(0 /*zpos*/) = 0x1DF031F; // outsize
+        // sun8i_ui_layer_update_buffer!!!
+            //bpp = 4 I think that's bytes per pixel
+            SUN8I_MIXER_CHAN_UI_LAYER_PITCH(0) = 3200; // 800 * 4?
+            // Address is just the start of the gem->dma_addr, no offset required
+            SUN8I_MIXER_CHAN_UI_LAYER_TOP_LADDR(0) = (uint32_t)framebufferz; // memory of size 1536000 == 800 * 480 * 4
+        /* NEVERUSED sun8i_vi_layer_atomic_update */
+        // sun4i_crtc_atomic_flush
+            // sunxi_engine_commit
+                /* BEGIN sun8i_mixer_commit */ // <- sends screen black!
+                    // We only enable channel=1, which is UI0
+                    SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0) |= SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN;
+                    uint32_t route = 1 << SUN8I_MIXER_BLEND_ROUTE_PIPE_SHIFT(0 /*zpos*/); // i.e. place ch1 at zpos=0
+                    uint32_t pipe_en = SUN8I_MIXER_BLEND_PIPE_CTL_EN(0/*zpos*/); // Enable zpos=0
+                    SUN8I_MIXER_BLEND_ROUTE = route;
+                    SUN8I_MIXER_BLEND_PIPE_CTL = pipe_en | SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0);
+                    SUN50I_MIXER_GLOBAL_DBUFF = SUN8I_MIXER_GLOBAL_DBUFF_ENABLE;
+
+
+
+
+
+
 
 
 
@@ -1044,6 +1074,9 @@ void display_configure(void) {
 */
 void display_init() {
 //   active_buffer = framebuffer1;
+for (uint32_t x = 0; x < 800*480; x++) {
+    framebufferz[x] = ~((uint32_t)0);
+}
   clocks_init();
   printf("DONE clocks_init\n");
   display_configure();
