@@ -39,9 +39,6 @@
 
 
 
-#define SUN8I_MIXER_GLOBAL_DBUFF		0x8
-
-
 // [1] 0x008100 TOP (mixer->top_regs)
 #define DE33_MIXER_TOP_REGS_BASE     (DE_BASE + 0x8100)
 #define SUN8I_MIXER_GLOBAL_CTL      *(volatile uint32_t *)(DE33_MIXER_TOP_REGS_BASE + 0x0000)

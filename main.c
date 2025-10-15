@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 
     // Reboot in n seconds using watchdog
     // reboot(0xb); // 0xb == 16 second reset timer
-    // reboot(4);
+    reboot(2);
 
     // Enble all GPIO
     // gpio_init();

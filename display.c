@@ -285,6 +285,23 @@ void dw_hdmi_phy_i2c_write(unsigned short data, unsigned char addr)
 */
 void display_configure(void) {
 
+
+    /* This piece of shitty code is me figuring out that I need to
+       'reclaim' SRAM_C which was 'borrowed' from DE at startup. Sigh.
+       The whole DE (display_clocks + mixer0) will fail to work without this.
+       And the dangerous confusion is that everything else works: TCON_TOP,
+       TCON_TV, HDMI, HDMI_PHY are all good, but the Mixer won't be working
+       without this and a cyan colour will be output unless it's working.
+    */
+    /* claim sram */
+    // ram DT 0x00028000
+    uint32_t test = *((uint32_t *)(0x3000000  + 0x4));
+    printf("JOBBY %x\n", test);
+    *((uint32_t *)(0x3000000  + 0x4)) = test & ~0x1000000;
+    test = *((uint32_t *)(0x3000000  + 0x4));
+    printf("JOBBY %x\n", test);
+    // return;
+
     /*  The following is taken from the component sunxi driver.
         We gloss over sun4i_drv_probe() because all that really does is set up
         the component framework so that bind works.
@@ -650,6 +667,7 @@ void display_configure(void) {
         //         SUN4I_TCON1_BASIC0_Y(mode->crtc_vdisplay)); 480
         SUN4I_TCON1_BASIC0_REG = SUN4I_TCON1_BASIC0_X(800) | SUN4I_TCON1_BASIC0_Y(480);
 	    /* Set the upscaling resolution */
+        // NOTE: If these values are reduced, the layer is bordered.
         SUN4I_TCON1_BASIC1_REG = SUN4I_TCON1_BASIC1_X(800) | SUN4I_TCON1_BASIC1_Y(480);
         // regmap_write(tcon->regs, SUN4I_TCON1_BASIC1_REG,
         //         SUN4I_TCON1_BASIC1_X(mode->crtc_hdisplay / div) |
@@ -753,7 +771,7 @@ void display_configure(void) {
         // BEGIN sun4i_tcon_channel_set_status
         SUN4I_TCON1_CTL_REG |= SUN4I_TCON1_CTL_TCON_ENABLE;
         TCON_TOP_GATE_SRC_REG |= (1 << 20); // Enable [E]tcon-ch1 <&tcon_top CLK_TCON_TOP_TV0> aka tcon-top-tv0
-        SUN50I_H616_CCU_TCON_TV0_CLK_REG |= BIT(31); // Parent: [E]tcon-tv0 <&ccu CLK_TCON_TV0> aka tcon-top-tv0 enable
+        SUN50I_H616_CCU_TCON_TV0_CLK_REG |= BIT(31); // Parent: [E]tcon-tv0 <&ccu CLK_TCON_TV0> aka tcon-tv0 enable
         // END sun4i_tcon_channel_set_status
     // END sun4i_tcon_set_status - enable
 
@@ -870,8 +888,7 @@ void display_configure(void) {
                                 udelay(2000);
                             }
                         }
-                    /* END dw_hdmi_phy_init() */  // Screen does deep black here!, not muddy
-                    // return;
+                    /* END dw_hdmi_phy_init() */  // Screen does deep black here.
 
 	                /* HDMI Initialization Step B.3 */
                     /* START dw_hdmi_enable_video_path */
@@ -893,14 +910,10 @@ void display_configure(void) {
                                 HDMI_MC_CLKDIS_PREPCLK_DISABLE |
                                 HDMI_MC_CLKDIS_TMDSCLK_DISABLE;
                         mc_clkdis &= ~HDMI_MC_CLKDIS_PIXELCLK_DISABLE;
-                        udelay(1000000);
-                        writeb(mc_clkdis, HDMI_MC_CLKDIS); // 0x7e <---- screen turns off here
-                        udelay(1000000);
+                        writeb(mc_clkdis, HDMI_MC_CLKDIS); // 0x7e <---- screen turns off here (i.e. signal lost)
 
                         mc_clkdis &= ~HDMI_MC_CLKDIS_TMDSCLK_DISABLE;
-                        writeb(mc_clkdis, HDMI_MC_CLKDIS); // 0x7c <--- should turn red here!
-                        udelay(1000000);
-                        // return;
+                        writeb(mc_clkdis, HDMI_MC_CLKDIS); // 0x7c <--- screen is a deep red here.
 
 
 
@@ -945,8 +958,7 @@ void display_configure(void) {
                             // writeb(HDMI_MC_FLOWCTRL_FEED_THROUGH_OFF_CSC_BYPASS,
                             //         HDMI_MC_FLOWCTRL);
                         }
-                    /* END dw_hdmi_enable_video_path */   // Screen goes deep red here! (But in mine it's muddy brown)
-                    return;
+                    /* END dw_hdmi_enable_video_path */
 
                     /* SKIP HDMI Initialization Step E - Configure audio */
 
@@ -1098,7 +1110,7 @@ void display_configure(void) {
         /* NEVERUSED sun8i_vi_layer_atomic_update */
         // sun4i_crtc_atomic_flush
             // sunxi_engine_commit
-                /* BEGIN sun8i_mixer_commit */ // <- sends screen black!
+                /* BEGIN sun8i_mixer_commit */ // <- This should replace red background with the framebuffer
                     // We only enable channel=1, which is UI0
                     SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0) |= SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN;
                     uint32_t route = 1 << SUN8I_MIXER_BLEND_ROUTE_PIPE_SHIFT(0 /*zpos*/); // i.e. place ch1 at zpos=0
