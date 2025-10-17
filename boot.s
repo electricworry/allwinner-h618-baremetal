@@ -158,7 +158,7 @@ primary:
   // 0 = b01000100 = Normal, Inner/Outer Non-Cacheable
   // 1 = b11111111 = Normal, Inner/Outer WB/WA/RA
   // 2 = b00000000 = Device-nGnRnE
-  MOV      x0, #0x000000000000FF44
+  MOV      x0, #0x0000000000004444
   MSR      MAIR_EL3, x0
 
   // Set up TCR_EL3

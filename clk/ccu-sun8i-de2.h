@@ -26,18 +26,15 @@
 // [0] 0x100000 BASE (mixer->engine.regs)
 #define DE33_MIXER_BASE              (DE_BASE + 0x100000)
 // We'll just use UI0 (layer/channel #1), which is mapped to 6
-#define SUN8I_CHANNEL_BASE                        (6 * 0x20000 + 0x1000) /* see sun8i_channel_base() */
-#define SUN8I_MIXER_CHAN_UI_LAYER_ATTR(layer)    *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x20 * (layer) + 0x0)
-#define SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN		BIT(0)
-#define SUN8I_MIXER_CHAN_UI_LAYER_SIZE(layer)    *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x20 * (layer) + 0x4)
-#define SUN8I_MIXER_CHAN_UI_OVL_SIZE             *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x88)
-// Same layer/channel passed
-#define SUN8I_VI_SCALAR_BASE                      (6 * 0x20000 + 0x1000 + 0x3000)
-#define SUN8I_SCALER_VSU_CTRL	                  *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_VI_SCALAR_BASE + 0x0)
+#define SUN8I_CHANNEL_BASE                           (6 * 0x20000 + 0x1000) /* see sun8i_channel_base() */
+#define SUN8I_MIXER_CHAN_UI_LAYER_ATTR(layer)       *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x20 * (layer) + 0x0)
+#define SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN		     BIT(0)
+#define SUN8I_MIXER_CHAN_UI_LAYER_SIZE(layer)       *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x20 * (layer) + 0x4)
 #define SUN8I_MIXER_CHAN_UI_LAYER_PITCH(layer)      *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x20 * (layer) + 0xc)
 #define SUN8I_MIXER_CHAN_UI_LAYER_TOP_LADDR(layer)  *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x20 * (layer) + 0x10)
-
-
+#define SUN8I_MIXER_CHAN_UI_OVL_SIZE                *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x88)
+#define SUN8I_VI_SCALAR_BASE                         (6 * 0x20000 + 0x1000 + 0x3000)
+#define SUN8I_SCALER_VSU_CTRL	                    *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_VI_SCALAR_BASE + 0x0)
 
 // [1] 0x008100 TOP (mixer->top_regs)
 #define DE33_MIXER_TOP_REGS_BASE     (DE_BASE + 0x8100)
@@ -48,6 +45,7 @@
 #define SUN50I_MIXER_GLOBAL_DBUFF   *(volatile uint32_t *)(DE33_MIXER_TOP_REGS_BASE + 0x0010)
 #define SUN8I_MIXER_GLOBAL_DBUFF_ENABLE		BIT(0)
 #define SUN8I_MIXER_GLOBAL_CTL_RT_EN  BIT(0)
+
 // [2] 0x280000 DISP (mixer->disp_regs)
 #define DE33_MIXER_DISP_REGS_BASE    (DE_BASE + 0x280000)
 // [2.1] Within DISP there is BLENDER at 0x1000
@@ -75,7 +73,6 @@
 #define SUN50I_FMT_LMT_C0                   *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + SUN50I_FMT_DE33 + 0x24)
 #define SUN50I_FMT_LMT_C1                   *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + SUN50I_FMT_DE33 + 0x28)
 
-
 /* colors are always in AARRGGBB format TODO: Make black */
 // #define SUN8I_MIXER_BLEND_COLOR_BLACK		0xff4e8a1f
 #define SUN8I_MIXER_BLEND_COLOR_BLACK		0xffff0000
@@ -83,19 +80,8 @@
 #define SUN8I_MIXER_BLEND_PIPE_CTL_EN_MSK	GENMASK(12, 8)
 #define SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(pipe)	BIT(pipe)
 #define SUN8I_MIXER_BLEND_MODE_DEF		    0x03010301
-
-
-
-
-
-
 #define SUN8I_MIXER_BLEND_OUTCTL_INTERLACED	BIT(1)
-
-
-#define DE33_MIXER_ENG_REGS_BASE     (DE_BASE + 0x100000)
-
-
-
-
+#define SUN8I_MIXER_CHAN_UI_LAYER_ATTR_FBFMT_MASK	GENMASK(12, 8)
+#define SUN8I_MIXER_CHAN_UI_LAYER_ATTR_FBFMT_OFFSET	8
 
 #endif

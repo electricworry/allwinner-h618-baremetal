@@ -12,7 +12,7 @@ volatile uint32_t* active_buffer;
 volatile uint32_t framebuffer1[512*512] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t framebuffer2[512*512] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t framebuffer3[512*512] __attribute__ ((section ("UNCACHED")));
-volatile uint32_t framebufferz[800*480] __attribute__ ((section ("UNCACHED")));
+volatile uint32_t framebufferz[1000*1000] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t waiting_for_irq = 0;
 
 #define HDMI_IH_PHY_STAT0_RX_SENSE \
@@ -25,38 +25,38 @@ volatile uint32_t waiting_for_irq = 0;
 
 static void writeb(uint8_t val, uint64_t reg)
 {
-    *(uint8_t *)(reg) = val;
+    *(volatile uint8_t *)(reg) = val;
 }
 
 static void writel(uint32_t val, uint64_t reg)
 {
-    *(uint32_t *)(reg) = val;
+    *(volatile uint32_t *)(reg) = val;
 }
 
 static uint8_t readb(uint64_t reg)
 {
-    return *(uint8_t *)(reg);
+    return *(volatile uint8_t *)(reg);
 }
 
 static uint32_t readl(uint64_t reg)
 {
-    return *(uint32_t *)(reg);
+    return *(volatile uint32_t *)(reg);
 }
 
 static void writeb_mask(uint8_t data, uint64_t reg,
 			     uint8_t shift, uint8_t mask)
 {
-    uint8_t val = *(uint8_t *)(reg);
+    uint8_t val = *(volatile uint8_t *)(reg);
     val &= ~mask;
     val |= (mask & (data << shift));
-    *(uint8_t *)(reg) = val;
+    *(volatile uint8_t *)(reg) = val;
 }
 
-void updatel(uint64_t reg, uint32_t mask, uint32_t val) 
+void updatel(volatile uint64_t reg, uint32_t mask, uint32_t val) 
 { 
     uint32_t tmp, orig;
  
-    orig = *(uint32_t *)(reg);
+    orig = *(volatile uint32_t *)(reg);
  
     tmp = orig & ~mask;
     tmp |= val & mask;
@@ -302,7 +302,7 @@ void display_configure(void) {
     printf("JOBBY %x\n", test);
     // return;
     // Erase the whole of MIXER0. This contains uninitialized data.
-    for(uint32_t addr = DE33_MIXER_BASE; addr < DE33_MIXER_BASE + 0x10000; addr += 4)
+    for(uint32_t addr = DE_BASE; addr < (DE_BASE + 0x400000); addr += 4)
     {
         *(volatile uint32_t*)(addr) = 0;
     }
@@ -371,7 +371,7 @@ void display_configure(void) {
     */
     // [E]mod(<&display_clocks CLK_MIXER0>) enable aka mixer0
     DE33_CLK_MIXER0 |= BIT(0);
-        /* START sun8i_mixer_init() */
+/* START sun8i_mixer_init() */
 	    /* Enable the mixer */
         SUN8I_MIXER_GLOBAL_CTL = SUN8I_MIXER_GLOBAL_CTL_RT_EN;
         SUN50I_MIXER_GLOBAL_CLK = 1;
@@ -384,12 +384,12 @@ void display_configure(void) {
         SUN8I_MIXER_BLEND_PIPE_CTL = SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0);
         SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = 0xffcc00cc; // magenta
 
-        plane_cnt = 1 /* vi_num */ + 3 /* ui_num */;
+        plane_cnt = 4; //1 /* vi_num */ + 3 /* ui_num */;
         for (i = 0; i < plane_cnt; i++) {
             SUN8I_MIXER_BLEND_MODE(i) = SUN8I_MIXER_BLEND_MODE_DEF;
         }
         SUN8I_MIXER_BLEND_PIPE_CTL &= ~SUN8I_MIXER_BLEND_PIPE_CTL_EN_MSK;
-        /* END sun8i_mixer_init() */
+/* END sun8i_mixer_init() */
     /* END MIXER allwinner,sun50i-h616-de33-mixer-0 linux/drivers/gpu/drm/sun4i/sun8i_mixer.c:sun8i_mixer_bind() */
 
     /* START TCON_TOP allwinner,sun50i-h6-tcon-top drivers/gpu/drm/sun4i/sun8i_tcon_top.c:sun8i_tcon_top_bind() */
@@ -735,9 +735,11 @@ void display_configure(void) {
         // END sun4i_tcon_set_mux()/sun8i_r40_tcon_tv_set_mux()
     // END sun4i_tcon_mode_set()
 
-    // START sunxi_engine_mode_set()/sun8i_mixer_mode_set()
+// START sunxi_engine_mode_set()/sun8i_mixer_mode_set()
     SUN50I_MIXER_GLOBAL_SIZE = SUN8I_MIXER_SIZE(800, 480);
+printf("\n sun8i_mixer_mode_set:1: reg: %x val %x\n", &SUN50I_MIXER_GLOBAL_SIZE, SUN8I_MIXER_SIZE(800, 480));
     SUN8I_MIXER_BLEND_OUTSIZE = SUN8I_MIXER_SIZE(800, 480);
+printf("\n sun8i_mixer_mode_set:2: reg: %x val %x\n", &SUN8I_MIXER_BLEND_OUTSIZE, SUN8I_MIXER_SIZE(800, 480));
 	if (0) /* interlaced */
 		val = SUN8I_MIXER_BLEND_OUTCTL_INTERLACED;
 	else
@@ -745,21 +747,25 @@ void display_configure(void) {
     val = SUN8I_MIXER_BLEND_OUTCTL;
     val &= ~SUN8I_MIXER_BLEND_OUTCTL_INTERLACED;
     val |= 0;
+    SUN8I_MIXER_BLEND_OUTCTL = val;
+printf("\n sun8i_mixer_mode_set:3: reg: %x val %x\n", &SUN8I_MIXER_BLEND_OUTCTL, val);
     SUN8I_MIXER_BLEND_BKCOLOR = 0xffff0000; // red
+printf("\n sun8i_mixer_mode_set:4: reg: %x val %x\n", &SUN8I_MIXER_BLEND_BKCOLOR, 0xffff0000);
     SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = 0xffff8000; // orange
-        // START sun50i_fmt_setup()
-        SUN50I_FMT_CTRL = 0;
-        SUN50I_FMT_SIZE = SUN8I_MIXER_SIZE(800, 480);
-        SUN50I_FMT_SWAP = 0;
-        SUN50I_FMT_DEPTH = 0; // assume bit10 false
-        SUN50I_FMT_FORMAT = 0; // Assume default colourspace
-        SUN50I_FMT_COEF = 0;
-        SUN50I_FMT_LMT_Y = (4095 << 16) | 0;
-        SUN50I_FMT_LMT_C0 = (4095 << 16) | 0;
-        SUN50I_FMT_LMT_C1 = (4095 << 16) | 0;
-        SUN50I_FMT_CTRL = 1;
-        // END sun50i_fmt_setup()
-    // FIN sunxi_engine_mode_set()/sun8i_mixer_mode_set()
+printf("\n sun8i_mixer_mode_set:5: reg: %x val %x\n", &SUN8I_MIXER_BLEND_ATTR_FCOLOR(0), 0xffff8000);
+        // // START sun50i_fmt_setup()
+        // SUN50I_FMT_CTRL = 0;
+        // SUN50I_FMT_SIZE = SUN8I_MIXER_SIZE(800, 480);
+        // SUN50I_FMT_SWAP = 0;
+        // SUN50I_FMT_DEPTH = 0; // assume bit10 false
+        // SUN50I_FMT_FORMAT = 0; // Assume default colourspace
+        // SUN50I_FMT_COEF = 0;
+        // SUN50I_FMT_LMT_Y = (4095 << 16) | 0;
+        // SUN50I_FMT_LMT_C0 = (4095 << 16) | 0;
+        // SUN50I_FMT_LMT_C1 = (4095 << 16) | 0;
+        // SUN50I_FMT_CTRL = 1;
+        // // END sun50i_fmt_setup()
+// FIN sunxi_engine_mode_set()/sun8i_mixer_mode_set()
 
 
     /* hdmi-clk, set to 32MHz, parent=96MHz
@@ -892,6 +898,7 @@ void display_configure(void) {
                                 printf("LOOP2 %x\n", bval);
                                 udelay(2000);
                             }
+                            // udelay(2000);
                         }
                     /* END dw_hdmi_phy_init() */  // Screen does deep black here.
 
@@ -1069,51 +1076,63 @@ void display_configure(void) {
     // drm_atomic_helper_commit_planes
         // sun8i_ui_layer_atomic_update
 
-            /* BEGIN sun8i_ui_layer_update_coord */
+/* BEGIN sun8i_ui_layer_update_coord */
             // channel/layer = 1
             // overlay = 0
-            // SUN8I_MIXER_CHAN_UI_LAYER_SIZE(0) = 0x1DF031F; // insize
-            // SUN8I_MIXER_CHAN_UI_OVL_SIZE = 0x1DF031F;
+            SUN8I_MIXER_CHAN_UI_LAYER_SIZE(0) = SUN8I_MIXER_SIZE(800, 480); // insize
+	printf("\n sun8i_ui_layer_update_coord1: reg: %x val %x\n", (DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x20 * (0) + 0x4), SUN8I_MIXER_SIZE(800, 480));
+            udelay(200);
+            SUN8I_MIXER_CHAN_UI_OVL_SIZE = SUN8I_MIXER_SIZE(800, 480);
+	printf("\n sun8i_ui_layer_update_coord2: reg: %x val %x\n", (DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x88), SUN8I_MIXER_SIZE(800, 480));
+            udelay(200);
             // No scaling required
                 // sun8i_vi_scaler_disable(mixer, 1)
 	            // SUN8I_SCALER_VSU_CTRL = 0;
-            // SUN8I_MIXER_BLEND_ATTR_COORD(0 /*zpos*/) = SUN8I_MIXER_COORD(0, 0);
-            SUN8I_MIXER_BLEND_ATTR_INSIZE(0 /*zpos*/) = 0x1DF031F; // outsize  // just this should make display black (was orange), but still orange!
-            /* END sun8i_ui_layer_update_coord */
+            SUN8I_MIXER_BLEND_ATTR_COORD(0 /*zpos*/) = SUN8I_MIXER_COORD(0, 0);
+	printf("\n sun8i_ui_layer_update_coord3: reg: %x val %x\n", (DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0xc + 0x10 * (0)), SUN8I_MIXER_COORD(0, 0));
+            udelay(200);
+            SUN8I_MIXER_BLEND_ATTR_INSIZE(0 /*zpos*/) = SUN8I_MIXER_SIZE(800, 480); // outsize  // just this should turn display from orange to black (or red?). It turns red.
+	printf("\n sun8i_ui_layer_update_coord4: reg: %x val %x\n", (DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x8 + 0x10 * (0)), SUN8I_MIXER_SIZE(800, 480));
+            udelay(200);
+            // return;
+/* END sun8i_ui_layer_update_coord */
 
-            // sun8i_vi_scaler_disable
-            //sun4i_tcon_enable_vblank
-            // sun8i_ui_layer_update_alpha
-            // sun8i_ui_layer_update_formats
-            // sun8i_ui_layer_update_buffer
+        // sun8i_vi_scaler_disable
+        // sun4i_tcon_enable_vblank
+        // sun8i_ui_layer_update_alpha
+/* START sun8i_ui_layer_update_formats */
+            // hw_fmt = 0x4
+            // val = SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0) &= ~SUN8I_MIXER_CHAN_UI_LAYER_ATTR_FBFMT_MASK;
+            // val |= (4 << SUN8I_MIXER_CHAN_UI_LAYER_ATTR_FBFMT_OFFSET);
 
-        // sun8i_ui_layer_update_buffer!!!
+/* END sun8i_ui_layer_update_formats */
+
+/* START sun8i_ui_layer_update_buffer!!! */
             //bpp = 4 I think that's bytes per pixel
             SUN8I_MIXER_CHAN_UI_LAYER_PITCH(0) = 3200; // 800 * 4?
             // Address is just the start of the gem->dma_addr, no offset required
             SUN8I_MIXER_CHAN_UI_LAYER_TOP_LADDR(0) = (uint32_t)framebufferz; // memory of size 1536000 == 800 * 480 * 4
-        /* NEVERUSED sun8i_vi_layer_atomic_update */
+/* END sun8i_ui_layer_update_buffer!!! */
+
         // sun4i_crtc_atomic_flush
             // sunxi_engine_commit
-                /* BEGIN sun8i_mixer_commit */
+/* BEGIN sun8i_mixer_commit */
                     // We only enable channel=1, which is UI0
                     // ch_base: c1000 overlay: 0 channel: 1 zpos: 0
                     SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0) |= SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN;
-			printf("\n 1: reg: %x mask %x val %x\n", &SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0), SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN, SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN);
+			printf("\n sun8i_mixer_commit1: reg: %x mask %x val %x\n", &SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0), SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN, SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN);
                     uint32_t route = 1 << SUN8I_MIXER_BLEND_ROUTE_PIPE_SHIFT(0 /*zpos*/); // i.e. place ch1 at zpos=0
                     uint32_t pipe_en = SUN8I_MIXER_BLEND_PIPE_CTL_EN(0/*zpos*/); // Enable zpos=0
-
                     
-                    SUN8I_MIXER_BLEND_ROUTE = route;
-	printf("\n 2: reg: %x val %x\n", &SUN8I_MIXER_BLEND_ROUTE, route);
-                    SUN8I_MIXER_BLEND_PIPE_CTL = pipe_en | SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0);
-	printf("\n 3: reg: %x val %x\n", &SUN8I_MIXER_BLEND_PIPE_CTL, pipe_en | SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0));
+                    SUN8I_MIXER_BLEND_ROUTE = 0;
+	printf("\n sun8i_mixer_commit2: reg: %x val %x\n", &SUN8I_MIXER_BLEND_ROUTE, route);
+                    SUN8I_MIXER_BLEND_PIPE_CTL = pipe_en | SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0); // Orange again
+    // udelay(2000000);
+            return;
+	printf("\n sun8i_mixer_commit3: reg: %x val %x\n", &SUN8I_MIXER_BLEND_PIPE_CTL, pipe_en | SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0));
                     SUN50I_MIXER_GLOBAL_DBUFF = SUN8I_MIXER_GLOBAL_DBUFF_ENABLE;
-	printf("\n 4: reg: %x val %x\n", &SUN50I_MIXER_GLOBAL_DBUFF, SUN8I_MIXER_GLOBAL_DBUFF_ENABLE);
-
-
-
-                /* END sun8i_mixer_commit */ // <- This should replace red background with the framebuffer
+	printf("\n sun8i_mixer_commit4: reg: %x val %x\n", &SUN50I_MIXER_GLOBAL_DBUFF, SUN8I_MIXER_GLOBAL_DBUFF_ENABLE);
+    /* END sun8i_mixer_commit */ // <- This should replace red background with the framebuffer
 
 
 
@@ -1137,8 +1156,8 @@ void display_configure(void) {
 */
 void display_init() {
 //   active_buffer = framebuffer1;
-for (uint32_t x = 0; x < 800*480; x++) {
-    framebufferz[x] = 0xff0000ff;
+for (uint32_t x = 0; x < 1000*1000; x++) {
+    framebufferz[x] = 0xff00ff00;
 }
   clocks_init();
   printf("DONE clocks_init\n");
