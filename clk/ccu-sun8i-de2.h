@@ -26,13 +26,13 @@
 // [0] 0x100000 BASE (mixer->engine.regs)
 #define DE33_MIXER_BASE              (DE_BASE + 0x100000)
 // We'll just use UI0 (layer/channel #1), which is mapped to 6
-#define SUN8I_CHANNEL_BASE                        (6 * 0x2000 + 0x1000) /* see sun8i_channel_base() */
+#define SUN8I_CHANNEL_BASE                        (6 * 0x20000 + 0x1000) /* see sun8i_channel_base() */
 #define SUN8I_MIXER_CHAN_UI_LAYER_ATTR(layer)    *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x20 * (layer) + 0x0)
 #define SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN		BIT(0)
 #define SUN8I_MIXER_CHAN_UI_LAYER_SIZE(layer)    *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x20 * (layer) + 0x4)
 #define SUN8I_MIXER_CHAN_UI_OVL_SIZE             *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x88)
 // Same layer/channel passed
-#define SUN8I_VI_SCALAR_BASE                      (6 * 0x2000 + 0x1000 + 0x3000)
+#define SUN8I_VI_SCALAR_BASE                      (6 * 0x20000 + 0x1000 + 0x3000)
 #define SUN8I_SCALER_VSU_CTRL	                  *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_VI_SCALAR_BASE + 0x0)
 #define SUN8I_MIXER_CHAN_UI_LAYER_PITCH(layer)      *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x20 * (layer) + 0xc)
 #define SUN8I_MIXER_CHAN_UI_LAYER_TOP_LADDR(layer)  *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x20 * (layer) + 0x10)

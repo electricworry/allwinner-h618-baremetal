@@ -301,6 +301,11 @@ void display_configure(void) {
     test = *((uint32_t *)(0x3000000  + 0x4));
     printf("JOBBY %x\n", test);
     // return;
+    // Erase the whole of MIXER0. This contains uninitialized data.
+    for(uint32_t addr = DE33_MIXER_BASE; addr < DE33_MIXER_BASE + 0x10000; addr += 4)
+    {
+        *(volatile uint32_t*)(addr) = 0;
+    }
 
     /*  The following is taken from the component sunxi driver.
         We gloss over sun4i_drv_probe() because all that really does is set up
@@ -371,13 +376,13 @@ void display_configure(void) {
         SUN8I_MIXER_GLOBAL_CTL = SUN8I_MIXER_GLOBAL_CTL_RT_EN;
         SUN50I_MIXER_GLOBAL_CLK = 1;
 	    /* Set background color to black */
-        SUN8I_MIXER_BLEND_BKCOLOR = SUN8I_MIXER_BLEND_COLOR_BLACK;
+        SUN8I_MIXER_BLEND_BKCOLOR = 0xffc0c0c0; // grey
         /*
         * Set fill color of bottom plane to black. Generally not needed
         * except when VI plane is at bottom (zpos = 0) and enabled.
         */
         SUN8I_MIXER_BLEND_PIPE_CTL = SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0);
-        SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = SUN8I_MIXER_BLEND_COLOR_BLACK;
+        SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = 0xffcc00cc; // magenta
 
         plane_cnt = 1 /* vi_num */ + 3 /* ui_num */;
         for (i = 0; i < plane_cnt; i++) {
@@ -740,8 +745,8 @@ void display_configure(void) {
     val = SUN8I_MIXER_BLEND_OUTCTL;
     val &= ~SUN8I_MIXER_BLEND_OUTCTL_INTERLACED;
     val |= 0;
-    SUN8I_MIXER_BLEND_BKCOLOR = SUN8I_MIXER_BLEND_COLOR_BLACK;
-    SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = SUN8I_MIXER_BLEND_COLOR_BLACK;
+    SUN8I_MIXER_BLEND_BKCOLOR = 0xffff0000; // red
+    SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = 0xffff8000; // orange
         // START sun50i_fmt_setup()
         SUN50I_FMT_CTRL = 0;
         SUN50I_FMT_SIZE = SUN8I_MIXER_SIZE(800, 480);
@@ -915,35 +920,6 @@ void display_configure(void) {
                         mc_clkdis &= ~HDMI_MC_CLKDIS_TMDSCLK_DISABLE;
                         writeb(mc_clkdis, HDMI_MC_CLKDIS); // 0x7c <--- screen is a deep red here.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                        
-
                         /* Enable csc (colour space conversion) path */
                         if (/*is_csc_needed(hdmi)*/ 0) {
                             // hdmi->mc_clkdis &= ~HDMI_MC_CLKDIS_CSCCLK_DISABLE;
@@ -1092,16 +1068,25 @@ void display_configure(void) {
 
     // drm_atomic_helper_commit_planes
         // sun8i_ui_layer_atomic_update
-            // sun8i_ui_layer_update_coord
+
+            /* BEGIN sun8i_ui_layer_update_coord */
             // channel/layer = 1
             // overlay = 0
-            SUN8I_MIXER_CHAN_UI_LAYER_SIZE(0) = 0x1DF031F; // insize
-            SUN8I_MIXER_CHAN_UI_OVL_SIZE = 0x1DF031F;
+            // SUN8I_MIXER_CHAN_UI_LAYER_SIZE(0) = 0x1DF031F; // insize
+            // SUN8I_MIXER_CHAN_UI_OVL_SIZE = 0x1DF031F;
             // No scaling required
                 // sun8i_vi_scaler_disable(mixer, 1)
-	            SUN8I_SCALER_VSU_CTRL = 0;
-            SUN8I_MIXER_BLEND_ATTR_COORD(0 /*zpos*/) = SUN8I_MIXER_COORD(0, 0);
-            SUN8I_MIXER_BLEND_ATTR_INSIZE(0 /*zpos*/) = 0x1DF031F; // outsize
+	            // SUN8I_SCALER_VSU_CTRL = 0;
+            // SUN8I_MIXER_BLEND_ATTR_COORD(0 /*zpos*/) = SUN8I_MIXER_COORD(0, 0);
+            SUN8I_MIXER_BLEND_ATTR_INSIZE(0 /*zpos*/) = 0x1DF031F; // outsize  // just this should make display black (was orange), but still orange!
+            /* END sun8i_ui_layer_update_coord */
+
+            // sun8i_vi_scaler_disable
+            //sun4i_tcon_enable_vblank
+            // sun8i_ui_layer_update_alpha
+            // sun8i_ui_layer_update_formats
+            // sun8i_ui_layer_update_buffer
+
         // sun8i_ui_layer_update_buffer!!!
             //bpp = 4 I think that's bytes per pixel
             SUN8I_MIXER_CHAN_UI_LAYER_PITCH(0) = 3200; // 800 * 4?
@@ -1110,20 +1095,37 @@ void display_configure(void) {
         /* NEVERUSED sun8i_vi_layer_atomic_update */
         // sun4i_crtc_atomic_flush
             // sunxi_engine_commit
-                /* BEGIN sun8i_mixer_commit */ // <- This should replace red background with the framebuffer
+                /* BEGIN sun8i_mixer_commit */
                     // We only enable channel=1, which is UI0
+                    // ch_base: c1000 overlay: 0 channel: 1 zpos: 0
                     SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0) |= SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN;
+			printf("\n 1: reg: %x mask %x val %x\n", &SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0), SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN, SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN);
                     uint32_t route = 1 << SUN8I_MIXER_BLEND_ROUTE_PIPE_SHIFT(0 /*zpos*/); // i.e. place ch1 at zpos=0
                     uint32_t pipe_en = SUN8I_MIXER_BLEND_PIPE_CTL_EN(0/*zpos*/); // Enable zpos=0
+
+                    
                     SUN8I_MIXER_BLEND_ROUTE = route;
+	printf("\n 2: reg: %x val %x\n", &SUN8I_MIXER_BLEND_ROUTE, route);
                     SUN8I_MIXER_BLEND_PIPE_CTL = pipe_en | SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0);
+	printf("\n 3: reg: %x val %x\n", &SUN8I_MIXER_BLEND_PIPE_CTL, pipe_en | SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0));
                     SUN50I_MIXER_GLOBAL_DBUFF = SUN8I_MIXER_GLOBAL_DBUFF_ENABLE;
+	printf("\n 4: reg: %x val %x\n", &SUN50I_MIXER_GLOBAL_DBUFF, SUN8I_MIXER_GLOBAL_DBUFF_ENABLE);
 
 
 
+                /* END sun8i_mixer_commit */ // <- This should replace red background with the framebuffer
 
 
 
+//   // The output takes a 480x270 area from a total 512x302
+//   // buffer leaving a 16px overscan on all 4 sides.
+//   DE_MIXER0_OVL_V_ATTCTL(0) = (1<<15) | (1<<0);
+//   DE_MIXER0_OVL_V_MBSIZE(0) = (269<<16) | 479;
+//   DE_MIXER0_OVL_V_COOR(0) = 0;
+//   DE_MIXER0_OVL_V_PITCH0(0) = 512*4; // Scan line in bytes including overscan
+//   DE_MIXER0_OVL_V_TOP_LADD0(0) = (uint32_t)&framebuffer1[512*16+16]; // Start at y=16
+
+//   DE_MIXER0_OVL_V_SIZE = (269<<16) | 479;
 
 
 
@@ -1136,7 +1138,7 @@ void display_configure(void) {
 void display_init() {
 //   active_buffer = framebuffer1;
 for (uint32_t x = 0; x < 800*480; x++) {
-    framebufferz[x] = ~((uint32_t)0);
+    framebufferz[x] = 0xff0000ff;
 }
   clocks_init();
   printf("DONE clocks_init\n");
