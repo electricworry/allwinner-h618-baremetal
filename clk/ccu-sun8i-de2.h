@@ -15,6 +15,7 @@
 #define DE33_CLK_BUS_MIXER0       *(volatile uint32_t *)(DE33_CLK_BASE + 0x0004)
 #define DE33_CLK_RST_MIXER0       *(volatile uint32_t *)(DE33_CLK_BASE + 0x0008)
 #define DE33_CLK_MIXER0_DIV       *(volatile uint32_t *)(DE33_CLK_BASE + 0x000C)
+#define HHMMMM       *(volatile uint32_t *)(DE33_CLK_BASE + 0x10)
 #define DE_RANDOM_1_REG           *(volatile uint32_t *)(DE33_CLK_BASE + 0x0024)
 #define DE_RANDOM_1_VAL           0x0
 #define DE_RANDOM_2_REG           *(volatile uint32_t *)(DE33_CLK_BASE + 0x0028)
@@ -23,6 +24,17 @@
 // allwinner,sun50i-h616-de33-mixer-0
 // mixer0: mixer@100000
 // Mixer is awkwardly split into three sections
+
+// 0x008100 TOP (mixer->top_regs)
+#define DE33_MIXER_TOP_REGS_BASE     (DE_BASE + 0x8100)
+#define SUN8I_MIXER_GLOBAL_CTL      *(volatile uint32_t *)(DE33_MIXER_TOP_REGS_BASE + 0x0000)
+#define SUN50I_MIXER_GLOBAL_SIZE    *(volatile uint32_t *)(DE33_MIXER_TOP_REGS_BASE + 0x0008)
+#define SUN8I_MIXER_SIZE(w, h)			(((h) - 1) << 16 | ((w) - 1))
+#define SUN50I_MIXER_GLOBAL_CLK     *(volatile uint32_t *)(DE33_MIXER_TOP_REGS_BASE + 0x000c)
+#define SUN50I_MIXER_GLOBAL_DBUFF   *(volatile uint32_t *)(DE33_MIXER_TOP_REGS_BASE + 0x0010)
+#define SUN8I_MIXER_GLOBAL_DBUFF_ENABLE		BIT(0)
+#define SUN8I_MIXER_GLOBAL_CTL_RT_EN  BIT(0)
+
 // [0] 0x100000 BASE (mixer->engine.regs)
 #define DE33_MIXER_BASE              (DE_BASE + 0x100000)
 // We'll just use UI0 (layer/channel #1), which is mapped to 6
@@ -36,31 +48,21 @@
 #define SUN8I_VI_SCALAR_BASE                         (6 * 0x20000 + 0x1000 + 0x3000)
 #define SUN8I_SCALER_VSU_CTRL	                    *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_VI_SCALAR_BASE + 0x0)
 
-// [1] 0x008100 TOP (mixer->top_regs)
-#define DE33_MIXER_TOP_REGS_BASE     (DE_BASE + 0x8100)
-#define SUN8I_MIXER_GLOBAL_CTL      *(volatile uint32_t *)(DE33_MIXER_TOP_REGS_BASE + 0x0000)
-#define SUN50I_MIXER_GLOBAL_SIZE    *(volatile uint32_t *)(DE33_MIXER_TOP_REGS_BASE + 0x0008)
-#define SUN8I_MIXER_SIZE(w, h)			(((h) - 1) << 16 | ((w) - 1))
-#define SUN50I_MIXER_GLOBAL_CLK     *(volatile uint32_t *)(DE33_MIXER_TOP_REGS_BASE + 0x000c)
-#define SUN50I_MIXER_GLOBAL_DBUFF   *(volatile uint32_t *)(DE33_MIXER_TOP_REGS_BASE + 0x0010)
-#define SUN8I_MIXER_GLOBAL_DBUFF_ENABLE		BIT(0)
-#define SUN8I_MIXER_GLOBAL_CTL_RT_EN  BIT(0)
-
 // [2] 0x280000 DISP (mixer->disp_regs)
 #define DE33_MIXER_DISP_REGS_BASE    (DE_BASE + 0x280000)
 // [2.1] Within DISP there is BLENDER at 0x1000
 #define DE2_BLD_BASE 0x1000 /* Blender Base */
 #define SUN8I_MIXER_BLEND_PIPE_CTL          *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x0)
 #define SUN8I_MIXER_BLEND_ROUTE		        *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x80)
-#define SUN8I_MIXER_BLEND_ROUTE_PIPE_SHIFT(n)	((n) << 2)
-#define SUN8I_MIXER_BLEND_BKCOLOR	        *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x88)
-#define SUN8I_MIXER_BLEND_ATTR_COORD(x)	    *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0xc + 0x10 * (x))
-#define SUN8I_MIXER_COORD(x, y)			     ((y) << 16 | (x))
-#define SUN8I_MIXER_BLEND_ATTR_INSIZE(x)	*(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x8 + 0x10 * (x))
-#define SUN8I_MIXER_BLEND_OUTSIZE		    *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x8c)
-#define SUN8I_MIXER_BLEND_OUTCTL	    	*(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0xfc)
 #define SUN8I_MIXER_BLEND_ATTR_FCOLOR(x)	*(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x04 + 0x10 * (x))
+#define SUN8I_MIXER_BLEND_ATTR_INSIZE(x)	*(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x8 + 0x10 * (x))
+#define SUN8I_MIXER_BLEND_ATTR_COORD(x)	    *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0xc + 0x10 * (x))
+#define SUN8I_MIXER_BLEND_BKCOLOR	        *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x88)
+#define SUN8I_MIXER_BLEND_OUTSIZE		    *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x8c)
 #define SUN8I_MIXER_BLEND_MODE(x)	    	*(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x90 + 0x04 * (x))
+#define SUN8I_MIXER_BLEND_OUTCTL	    	*(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0xfc)
+#define SUN8I_MIXER_BLEND_ROUTE_PIPE_SHIFT(n)	((n) << 2)
+#define SUN8I_MIXER_COORD(x, y)			     ((y) << 16 | (x))
 // [2.2] Within DISP there is Formatter? at 0x5000
 #define SUN50I_FMT_DE33 0x5000
 #define SUN50I_FMT_CTRL                     *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + SUN50I_FMT_DE33 + 0x00)

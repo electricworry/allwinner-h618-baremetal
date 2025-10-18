@@ -8,6 +8,12 @@
 #include "display.h"
 #include "edid.h"
 
+/*
+Max width: 8192
+Max height: 8192
+Max clock: ????
+*/
+
 volatile uint32_t* active_buffer;
 volatile uint32_t framebuffer1[512*512] __attribute__ ((section ("UNCACHED")));
 volatile uint32_t framebuffer2[512*512] __attribute__ ((section ("UNCACHED")));
@@ -256,6 +262,27 @@ void clocks_init(void)
        which will do the serious work to get the framebuffer going. */
 }
 
+void reclaim_sram_c_and_erase(void)
+{
+    /* This piece of shitty code is me figuring out that I need to
+       'reclaim' SRAM_C which was 'borrowed' from DE at startup. Sigh.
+       The whole DE (display_clocks + mixer0) will fail to work without this.
+       And the dangerous confusion is that everything else works: TCON_TOP,
+       TCON_TV, HDMI, HDMI_PHY are all good, but the Mixer won't be working
+       without this and a cyan colour will be output unless it's working.
+    */
+    /* claim sram */
+    // ram DT 0x00028000
+    uint32_t test = *((uint32_t *)(0x3000000  + 0x4));
+    *((uint32_t *)(0x3000000  + 0x4)) = test & ~0x1000000;
+    test = *((uint32_t *)(0x3000000  + 0x4));
+    // Erase the whole of DE. It contains uninitialized data.
+    for(uint32_t addr = DE_BASE; addr < (DE_BASE + 0x400000); addr += 4)
+    {
+        *(volatile uint32_t*)(addr) = 0;
+    }
+}
+
 static bool hdmi_phy_wait_i2c_done(int msec)
 {
 	uint32_t val;
@@ -285,27 +312,6 @@ void dw_hdmi_phy_i2c_write(unsigned short data, unsigned char addr)
 */
 void display_configure(void) {
 
-
-    /* This piece of shitty code is me figuring out that I need to
-       'reclaim' SRAM_C which was 'borrowed' from DE at startup. Sigh.
-       The whole DE (display_clocks + mixer0) will fail to work without this.
-       And the dangerous confusion is that everything else works: TCON_TOP,
-       TCON_TV, HDMI, HDMI_PHY are all good, but the Mixer won't be working
-       without this and a cyan colour will be output unless it's working.
-    */
-    /* claim sram */
-    // ram DT 0x00028000
-    uint32_t test = *((uint32_t *)(0x3000000  + 0x4));
-    printf("JOBBY %x\n", test);
-    *((uint32_t *)(0x3000000  + 0x4)) = test & ~0x1000000;
-    test = *((uint32_t *)(0x3000000  + 0x4));
-    printf("JOBBY %x\n", test);
-    // return;
-    // Erase the whole of MIXER0. This contains uninitialized data.
-    for(uint32_t addr = DE_BASE; addr < (DE_BASE + 0x400000); addr += 4)
-    {
-        *(volatile uint32_t*)(addr) = 0;
-    }
 
     /*  The following is taken from the component sunxi driver.
         We gloss over sun4i_drv_probe() because all that really does is set up
@@ -384,7 +390,7 @@ void display_configure(void) {
         SUN8I_MIXER_BLEND_PIPE_CTL = SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0);
         SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = 0xffcc00cc; // magenta
 
-        plane_cnt = 4; //1 /* vi_num */ + 3 /* ui_num */;
+        plane_cnt = 1; //1 /* vi_num */ + 3 /* ui_num */;
         for (i = 0; i < plane_cnt; i++) {
             SUN8I_MIXER_BLEND_MODE(i) = SUN8I_MIXER_BLEND_MODE_DEF;
         }
@@ -737,9 +743,7 @@ void display_configure(void) {
 
 // START sunxi_engine_mode_set()/sun8i_mixer_mode_set()
     SUN50I_MIXER_GLOBAL_SIZE = SUN8I_MIXER_SIZE(800, 480);
-printf("\n sun8i_mixer_mode_set:1: reg: %x val %x\n", &SUN50I_MIXER_GLOBAL_SIZE, SUN8I_MIXER_SIZE(800, 480));
     SUN8I_MIXER_BLEND_OUTSIZE = SUN8I_MIXER_SIZE(800, 480);
-printf("\n sun8i_mixer_mode_set:2: reg: %x val %x\n", &SUN8I_MIXER_BLEND_OUTSIZE, SUN8I_MIXER_SIZE(800, 480));
 	if (0) /* interlaced */
 		val = SUN8I_MIXER_BLEND_OUTCTL_INTERLACED;
 	else
@@ -748,11 +752,9 @@ printf("\n sun8i_mixer_mode_set:2: reg: %x val %x\n", &SUN8I_MIXER_BLEND_OUTSIZE
     val &= ~SUN8I_MIXER_BLEND_OUTCTL_INTERLACED;
     val |= 0;
     SUN8I_MIXER_BLEND_OUTCTL = val;
-printf("\n sun8i_mixer_mode_set:3: reg: %x val %x\n", &SUN8I_MIXER_BLEND_OUTCTL, val);
     SUN8I_MIXER_BLEND_BKCOLOR = 0xffff0000; // red
-printf("\n sun8i_mixer_mode_set:4: reg: %x val %x\n", &SUN8I_MIXER_BLEND_BKCOLOR, 0xffff0000);
     SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = 0xffff8000; // orange
-printf("\n sun8i_mixer_mode_set:5: reg: %x val %x\n", &SUN8I_MIXER_BLEND_ATTR_FCOLOR(0), 0xffff8000);
+    // HHMMMM = ~(1<<0);;
         // // START sun50i_fmt_setup()
         // SUN50I_FMT_CTRL = 0;
         // SUN50I_FMT_SIZE = SUN8I_MIXER_SIZE(800, 480);
@@ -766,6 +768,7 @@ printf("\n sun8i_mixer_mode_set:5: reg: %x val %x\n", &SUN8I_MIXER_BLEND_ATTR_FC
         // SUN50I_FMT_CTRL = 1;
         // // END sun50i_fmt_setup()
 // FIN sunxi_engine_mode_set()/sun8i_mixer_mode_set()
+// red here?
 
 
     /* hdmi-clk, set to 32MHz, parent=96MHz
@@ -1080,10 +1083,8 @@ printf("\n sun8i_mixer_mode_set:5: reg: %x val %x\n", &SUN8I_MIXER_BLEND_ATTR_FC
             // channel/layer = 1
             // overlay = 0
             SUN8I_MIXER_CHAN_UI_LAYER_SIZE(0) = SUN8I_MIXER_SIZE(800, 480); // insize
-	printf("\n sun8i_ui_layer_update_coord1: reg: %x val %x\n", (DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x20 * (0) + 0x4), SUN8I_MIXER_SIZE(800, 480));
             udelay(200);
             SUN8I_MIXER_CHAN_UI_OVL_SIZE = SUN8I_MIXER_SIZE(800, 480);
-	printf("\n sun8i_ui_layer_update_coord2: reg: %x val %x\n", (DE33_MIXER_BASE + SUN8I_CHANNEL_BASE + 0x88), SUN8I_MIXER_SIZE(800, 480));
             udelay(200);
             // No scaling required
                 // sun8i_vi_scaler_disable(mixer, 1)
@@ -1092,7 +1093,6 @@ printf("\n sun8i_mixer_mode_set:5: reg: %x val %x\n", &SUN8I_MIXER_BLEND_ATTR_FC
 	printf("\n sun8i_ui_layer_update_coord3: reg: %x val %x\n", (DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0xc + 0x10 * (0)), SUN8I_MIXER_COORD(0, 0));
             udelay(200);
             SUN8I_MIXER_BLEND_ATTR_INSIZE(0 /*zpos*/) = SUN8I_MIXER_SIZE(800, 480); // outsize  // just this should turn display from orange to black (or red?). It turns red.
-	printf("\n sun8i_ui_layer_update_coord4: reg: %x val %x\n", (DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x8 + 0x10 * (0)), SUN8I_MIXER_SIZE(800, 480));
             udelay(200);
             // return;
 /* END sun8i_ui_layer_update_coord */
@@ -1101,15 +1101,16 @@ printf("\n sun8i_mixer_mode_set:5: reg: %x val %x\n", &SUN8I_MIXER_BLEND_ATTR_FC
         // sun4i_tcon_enable_vblank
         // sun8i_ui_layer_update_alpha
 /* START sun8i_ui_layer_update_formats */
-            // hw_fmt = 0x4
-            // val = SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0) &= ~SUN8I_MIXER_CHAN_UI_LAYER_ATTR_FBFMT_MASK;
-            // val |= (4 << SUN8I_MIXER_CHAN_UI_LAYER_ATTR_FBFMT_OFFSET);
+            uint32_t hw_fmt = 0x4;
+            val = SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0) &= ~SUN8I_MIXER_CHAN_UI_LAYER_ATTR_FBFMT_MASK;
+            val |= (4 << SUN8I_MIXER_CHAN_UI_LAYER_ATTR_FBFMT_OFFSET);
+            SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0) = val;
 
 /* END sun8i_ui_layer_update_formats */
 
 /* START sun8i_ui_layer_update_buffer!!! */
             //bpp = 4 I think that's bytes per pixel
-            SUN8I_MIXER_CHAN_UI_LAYER_PITCH(0) = 3200; // 800 * 4?
+            SUN8I_MIXER_CHAN_UI_LAYER_PITCH(0) = 512*4; // 800 * 4?
             // Address is just the start of the gem->dma_addr, no offset required
             SUN8I_MIXER_CHAN_UI_LAYER_TOP_LADDR(0) = (uint32_t)framebufferz; // memory of size 1536000 == 800 * 480 * 4
 /* END sun8i_ui_layer_update_buffer!!! */
@@ -1120,50 +1121,27 @@ printf("\n sun8i_mixer_mode_set:5: reg: %x val %x\n", &SUN8I_MIXER_BLEND_ATTR_FC
                     // We only enable channel=1, which is UI0
                     // ch_base: c1000 overlay: 0 channel: 1 zpos: 0
                     SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0) |= SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN;
-			printf("\n sun8i_mixer_commit1: reg: %x mask %x val %x\n", &SUN8I_MIXER_CHAN_UI_LAYER_ATTR(0), SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN, SUN8I_MIXER_CHAN_UI_LAYER_ATTR_EN);
                     uint32_t route = 1 << SUN8I_MIXER_BLEND_ROUTE_PIPE_SHIFT(0 /*zpos*/); // i.e. place ch1 at zpos=0
                     uint32_t pipe_en = SUN8I_MIXER_BLEND_PIPE_CTL_EN(0/*zpos*/); // Enable zpos=0
                     
-                    SUN8I_MIXER_BLEND_ROUTE = 0;
-	printf("\n sun8i_mixer_commit2: reg: %x val %x\n", &SUN8I_MIXER_BLEND_ROUTE, route);
+                    SUN8I_MIXER_BLEND_ROUTE = route;
                     SUN8I_MIXER_BLEND_PIPE_CTL = pipe_en | SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0); // Orange again
     // udelay(2000000);
-            return;
-	printf("\n sun8i_mixer_commit3: reg: %x val %x\n", &SUN8I_MIXER_BLEND_PIPE_CTL, pipe_en | SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0));
                     SUN50I_MIXER_GLOBAL_DBUFF = SUN8I_MIXER_GLOBAL_DBUFF_ENABLE;
-	printf("\n sun8i_mixer_commit4: reg: %x val %x\n", &SUN50I_MIXER_GLOBAL_DBUFF, SUN8I_MIXER_GLOBAL_DBUFF_ENABLE);
     /* END sun8i_mixer_commit */ // <- This should replace red background with the framebuffer
-
-
-
-//   // The output takes a 480x270 area from a total 512x302
-//   // buffer leaving a 16px overscan on all 4 sides.
-//   DE_MIXER0_OVL_V_ATTCTL(0) = (1<<15) | (1<<0);
-//   DE_MIXER0_OVL_V_MBSIZE(0) = (269<<16) | 479;
-//   DE_MIXER0_OVL_V_COOR(0) = 0;
-//   DE_MIXER0_OVL_V_PITCH0(0) = 512*4; // Scan line in bytes including overscan
-//   DE_MIXER0_OVL_V_TOP_LADD0(0) = (uint32_t)&framebuffer1[512*16+16]; // Start at y=16
-
-//   DE_MIXER0_OVL_V_SIZE = (269<<16) | 479;
-
-
-
-
-    
 }
 
 /*  This function attempts to get graphics working.
 */
-void display_init() {
-//   active_buffer = framebuffer1;
-for (uint32_t x = 0; x < 1000*1000; x++) {
-    framebufferz[x] = 0xff00ff00;
-}
-  clocks_init();
-  printf("DONE clocks_init\n");
-  display_configure();
-  printf("DONE display_configure\n");
-  printf("HHHH %08x\n", GENMASK(27,24));
+void display_init()
+{
+    for (uint32_t x = 0; x < 1000*1000; x++) {
+        framebufferz[x] = 0xff00ff00;
+    }
+    clocks_init();
+    reclaim_sram_c_and_erase();
+    display_configure();
+    printf("DONE display_configure\n");
 }
 
 void buffer_swap() {
