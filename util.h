@@ -9,9 +9,4 @@
 	(((~UL(0)) - (UL(1) << (l)) + 1) & \
 	 (~UL(0) >> (BITS_PER_LONG - 1 - (h))))
 
-//  #define MIN(a,b) \
-//    ({ __typeof__ (a) _a = (a); \
-//        __typeof__ (b) _b = (b); \
-//      _a > _b ? _b : _a; })
-
 #endif

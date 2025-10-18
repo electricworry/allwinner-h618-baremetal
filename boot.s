@@ -206,7 +206,7 @@ primary:
   STR      x0, [x1]
   
   // [1]: 0x4000,0000 - 0x7FFF,FFFF
-  LDR      x0, =TT_S1_NORMAL_WBWA            // Entry template
+  LDR      x0, =TT_S1_NORMAL_NO_CACHE            // Entry template
   ORR      x0, x0, #TT_S1_INNER_SHARED       // 'OR' with inner-shareable attribute
                                              // AP=0, RW
   ORR      x0, x0, #0x40000000               // 'OR' template with base physical address

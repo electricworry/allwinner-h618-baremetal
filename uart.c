@@ -4,25 +4,6 @@
 #include "ports.h"
 #include "clk/clk.h"
 
-// Set up the UART (serial port)
-void uart_init()
-{
-  // Configure port
-  // set_pin_mode(PORTA, 4, 2);
-
-  // Enable clock
-  // BUS_CLK_GATING3 |= (1<<16);
-  // BUS_SOFT_RST4 |= (1<<16);
-
-  // Configure baud rate
-  // UART0_LCR = (1<<7) | 3;
-  // UART0_DLL = 13;
-  // UART0_LCR = 3;
-
-  // Enable FIFO
-  // UART0_FCR = 0x00000001;
-}
-
 // UART is ready to receive data to transmit?
 unsigned char uart_tx_ready()
 {

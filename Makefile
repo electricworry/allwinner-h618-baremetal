@@ -8,8 +8,8 @@ CFLAGS=-T linker.ld -mcpu=cortex-a53 -O0 -Wextra
 
 os.bin: os.elf
 	$(OBJCOPY) -O binary --remove-section .uncached os.elf os.bin
-os.elf: linker.ld boot.o main.o uart.o ports.o mmu.o system.o display.o interrupts.o spritelayers.o usb.o demo.o edid.o
-	$(CC) $(CFLAGS) -o os.elf boot.o main.o uart.o ports.o mmu.o system.o display.o interrupts.o spritelayers.o usb.o demo.o edid.o -lm
+os.elf: linker.ld boot.o main.o uart.o ports.o system.o display.o interrupts.o edid.o
+	$(CC) $(CFLAGS) -o os.elf boot.o main.o uart.o ports.o system.o display.o interrupts.o edid.o -lm
 
 boot.o: boot.s
 	$(CC) $(CFLAGS) -c boot.s
@@ -19,20 +19,10 @@ uart.o: uart.c
 	$(CC) $(CFLAGS) -c uart.c
 ports.o: ports.c
 	$(CC) $(CFLAGS) -c ports.c
-mmu.o: mmu.c
-	$(CC) $(CFLAGS) -c mmu.c
 system.o: system.c
 	$(CC) $(CFLAGS) -c system.c
 display.o: display.c
 	$(CC) $(CFLAGS) -c display.c
-interrupts.o: interrupts.c
-	$(CC) $(CFLAGS) -c interrupts.c
-spritelayers.o: spritelayers.c
-	$(CC) $(CFLAGS) -c spritelayers.c
-usb.o: usb.c
-	$(CC) $(CFLAGS) -c usb.c
-demo.o: demo.c
-	$(CC) $(CFLAGS) -c demo.c
 edid.o: edid.c
 	$(CC) $(CFLAGS) -c edid.c
 

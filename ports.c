@@ -1,11 +1,6 @@
 #include "ports.h"
 #include "clk/clk.h"
 
-void gpio_init() {
-  // BUS_CLK_GATING2 |= (1<<5);
-  // APB0_CLK_GATING |= (1<<0);
-}
-
 void set_pin_mode(uint64_t port_addr, uint32_t pin, uint32_t mode) {
   struct port_registers * port = (struct port_registers *)port_addr;
   if(pin < 8) {

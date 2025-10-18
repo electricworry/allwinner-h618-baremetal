@@ -1325,6 +1325,3 @@ enum {
 #define SUN8I_HDMI_PHY_CEC_REG		0x003c
 
 void display_init();
-void buffer_swap();
-
-extern volatile uint32_t* active_buffer;
