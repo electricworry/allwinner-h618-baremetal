@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 {
     printf("Booting!\n");
 
-    reboot(4);
+    reboot(8);
 
     // Illuminate the red LED - PC12
     set_pin_mode(PORTC, 12, 1); // PORT PL12 output

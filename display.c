@@ -174,6 +174,10 @@ void sun50i_h616_ccu_probe(void)
     SUN50I_H616_CCU_DRAM_BGR_REG |= BIT(0); // bus-dram
 
     // TODO?: Skipping the notifier registration
+    // SUN50I_H616_CCU_XXXXXXXXXXX &= ~BIT(16);
+    // SUN50I_H616_CCU_XXXXXXXXXXX |= BIT(16);
+    // SUN50I_H616_CCU_XXXXXXXXXXX &= ~BIT(16);
+    // SUN50I_H616_CCU_XXXXXXXXXXX &= ~BIT(0);
 }
 
 void sun6i_rtc_probe(void)
@@ -245,12 +249,6 @@ void clocks_init(void)
         SUN50I_H616_CCU_DE_CLK_REG |= (1 << 31); // Enable CLK_DE
         // De-assert [E]<&ccu RST_BUS_DE>
         SUN50I_H616_CCU_DE_BGR_REG |= (1 << 16); // De-assert RST_BUS_DE
-        /*
-        * The DE33 requires these additional (unknown) registers set
-        * during initialisation.
-        */
-        DE_RANDOM_1_REG = DE_RANDOM_1_VAL;
-        DE_RANDOM_2_REG = DE_RANDOM_2_VAL;
         // devm_sunxi_ccu_probe() is called - i.e. the sunxi-ng framework - nothing happens
     /* END display-clocks allwinner,sun50i-h616-de33-clk linux/drivers/clk/sunxi-ng/ccu-sun8i-de2.c:sunxi_de2_clk_probe() */
     /* MIXER allwinner,sun50i-h616-de33-mixer-0 linux/drivers/gpu/drm/sun4i/sun8i_mixer.c:sun8i_mixer_probe() */
@@ -273,7 +271,7 @@ void reclaim_sram_c_and_erase(void)
     // ram DT 0x00028000
     uint32_t test = *((uint32_t *)(0x3000000  + 0x4));
     *((uint32_t *)(0x3000000  + 0x4)) = test & ~0x1000000;
-    test = *((uint32_t *)(0x3000000  + 0x4));
+    // test = *((uint32_t *)(0x3000000  + 0x4));
     // Erase the whole of DE. It contains uninitialized data.
     for(uint64_t addr = DE_BASE; addr < (DE_BASE + 0x400000); addr += 4)
     {
@@ -320,6 +318,36 @@ void display_configure(void)
         sun8i_dw_hdmi_bind()
         etc.
     */
+
+
+        /*
+        * The DE33 requires these additional (unknown) registers set
+        * during initialisation.
+        */
+        DE_RANDOM_1_REG = DE_RANDOM_1_VAL;
+        DE_RANDOM_2_REG = DE_RANDOM_2_VAL;
+
+    // *((uint32_t *)0x07010190) = 0;
+    // *((uint32_t *)0x07000000) = 0;
+    // *((uint32_t *)0x07000014) = 0x429;
+    // *((uint32_t *)0x0300170c) = 0;
+    // *((uint32_t *)0x03001804) = 5;
+    // *((uint32_t *)0x03001830) = 0x8100000b;
+    // *((uint32_t *)0x0300184c) = 0x00030003;
+    // *((uint32_t *)0x0300197c) = 0x10001;
+    // *((uint32_t *)0x030019f0) = 0x10001;
+    // *((uint32_t *)0x03001a74) = 0xe0000000;
+    // *((uint32_t *)0x03001a8c) = 0x01620122;
+    // *((uint32_t *)0x03001ff0) = 0x20001;
+    // // *((uint32_t *)0x01008028) = 0xa980; // THIS!!!
+    // *((uint32_t *)0x07010190) = 0;
+    // *((uint32_t *)0x07010190) = 0;
+    // *((uint32_t *)0x07010190) = 0;
+    // *((uint32_t *)0x07010190) = 0;
+    // *((uint32_t *)0x07010190) = 0;
+    // *((uint32_t *)0x07010190) = 0;
+    // *((uint32_t *)0x07010190) = 0;
+    // *((uint32_t *)0x07010190) = 0;
 
     uint32_t val;
     uint8_t bval;
@@ -1057,7 +1085,31 @@ void display_configure(void)
     SUN8I_MIXER_BLEND_OUTCTL = val;
     SUN8I_MIXER_BLEND_BKCOLOR = 0xffff0000; // red
     SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = 0xffff8000; // orange
-    // HHMMMM = ~(1<<0);;
+    
+    // HHMMMM = 0xe4;
+    // *((uint32_t *)0x01008040) = 0x7;
+    // *((uint32_t *)0x01008044) = 0x7;
+    // *((uint32_t *)0x01008048) = 0x7;
+    // *((uint32_t *)0x0100804c) = 0x7;
+    
+    // *((uint32_t *)0x01008050) = 0x7;
+    // *((uint32_t *)0x01008054) = 0x7;
+    // *((uint32_t *)0x01008058) = 0x7;
+    // *((uint32_t *)0x0100805c) = 0x7;
+    
+    // *((uint32_t *)0x01008060) = 0x7;
+    // *((uint32_t *)0x01008064) = 0x7;
+    // *((uint32_t *)0x01008068) = 0x7;
+    // *((uint32_t *)0x0100806c) = 0x7;
+    
+    // *((uint32_t *)0x01008070) = 0x7;
+    // *((uint32_t *)0x01008074) = 0x7;
+    // *((uint32_t *)0x01008078) = 0x7;
+    // *((uint32_t *)0x0100807c) = 0x7;
+    
+    // *((uint32_t *)0x01008080) = 0x707;
+    // *((uint32_t *)0x01008084) = 0x7;
+    
         // // START sun50i_fmt_setup()
         // SUN50I_FMT_CTRL = 0;
         // SUN50I_FMT_SIZE = SUN8I_MIXER_SIZE(800, 480);
@@ -1105,7 +1157,7 @@ void display_configure(void)
             SUN8I_MIXER_CHAN_UI_LAYER_PITCH(0) = 800*4; // 800 * 4?
             // Address is just the start of the gem->dma_addr, no offset required
             SUN8I_MIXER_CHAN_UI_LAYER_TOP_LADDR(0) = (uint32_t)(uint64_t)framebufferz;
-            udelay(2000);
+            // udelay(2000);
 /* END sun8i_ui_layer_update_buffer!!! */
 
 /* BEGIN sun8i_mixer_commit */
@@ -1120,6 +1172,175 @@ void display_configure(void)
                     SUN8I_MIXER_BLEND_PIPE_CTL = (pipe_en | SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0)); // Orange again. Should be black (i.e. on framebuffer!)
                     SUN50I_MIXER_GLOBAL_DBUFF = SUN8I_MIXER_GLOBAL_DBUFF_ENABLE;
 /* END sun8i_mixer_commit */ // <- This should replace red background with the framebuffer
+
+// SUN8I_MIXER_GLOBAL_CTL2 = 0x1d;
+SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = 0xffff8000;
+SUN8I_MIXER_GLOBAL_STATUS = ~BIT(8);
+    SUN8I_MIXER_BLEND_OUTCTL &= ~SUN8I_MIXER_BLEND_OUTCTL_INTERLACED;
+
+	uint64_t ptr;
+	uint32_t val1, val2, val3, val4;
+
+	printf("======= CLK ========\n");
+	for (ptr = 0x1008000; ptr < 0x1008100; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+
+	printf("======= TOP ========\n");
+	for (ptr = 0x1008100; ptr < 0x1008140; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+
+	printf("======= R_CCU ========\n");
+	for (ptr = 0x7010000; ptr < 0x7010210; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+
+	printf("======= RTC ========\n");
+	for (ptr = 0x7000000; ptr < 0x7000400; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+
+	printf("======= CCU ========\n");
+	for (ptr = 0x3001000; ptr < 0x3002000; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+
+
+
+
+
+
+
+	printf("======= BLENDER ========\n");
+	for (ptr = 0x1281000; ptr < 0x1281100; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+
+	printf("======= FMT ========\n");
+	for (ptr = 0x1285000; ptr < 0x1285100; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+
+	printf("======= ch0 ========\n");
+	for (ptr = 0x1101000; ptr < 0x1101100; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+
+	printf("======= ch1 ========\n");
+	for (ptr = 0x1121000; ptr < 0x1121100; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+	printf("======= ch2 ========\n");
+	for (ptr = 0x1141000; ptr < 0x1141100; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+	printf("======= ch3 ========\n");
+	for (ptr = 0x1161000; ptr < 0x1161100; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+	printf("======= ch4 ========\n");
+	for (ptr = 0x1181000; ptr < 0x1181100; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+	printf("======= ch5 ========\n");
+	for (ptr = 0x11a1000; ptr < 0x11a1100; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+	printf("======= ch6 ========\n");
+	for (ptr = 0x11c1000; ptr < 0x11c1100; ptr += 16)
+	{
+        val1 = *((uint32_t *)(ptr));
+        val2 = *((uint32_t *)(ptr+4));
+        val3 = *((uint32_t *)(ptr+8));
+        val4 = *((uint32_t *)(ptr+12));
+        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
+	}
+
+    printf("0x%x\n", *(uint32_t*)0x4031aaa0);
+
+    for (uint32_t x = 0; x < 1000*1000; x++) {
+        framebufferz[x] = 0xff00ffff;
+    }
+
+
+
+	// pr_emerg("======= ENGINE ========\n");
+	// for (ptr=0; ptr < 0x100000; ptr += 4)
+	// {
+	// 	regmap_read(engine->regs, ptr, &val);
+	// 	pr_emerg("0x%08x = 0x%08x\n", ptr, val);
+	// }
+	// pr_emerg("======= DISP ========\n");
+	// for (ptr=0; ptr < 0x20000; ptr += 4)
+	// {
+	// 	regmap_read(mixer->disp_regs, ptr, &val);
+	// 	pr_emerg("0x%08x = 0x%08x\n", ptr, val);
 }
 
 /*  This function attempts to get graphics working.
