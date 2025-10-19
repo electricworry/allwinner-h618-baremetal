@@ -1327,20 +1327,6 @@ SUN8I_MIXER_GLOBAL_STATUS = ~BIT(8);
     for (uint32_t x = 0; x < 1000*1000; x++) {
         framebufferz[x] = 0xff00ffff;
     }
-
-
-
-	// pr_emerg("======= ENGINE ========\n");
-	// for (ptr=0; ptr < 0x100000; ptr += 4)
-	// {
-	// 	regmap_read(engine->regs, ptr, &val);
-	// 	pr_emerg("0x%08x = 0x%08x\n", ptr, val);
-	// }
-	// pr_emerg("======= DISP ========\n");
-	// for (ptr=0; ptr < 0x20000; ptr += 4)
-	// {
-	// 	regmap_read(mixer->disp_regs, ptr, &val);
-	// 	pr_emerg("0x%08x = 0x%08x\n", ptr, val);
 }
 
 /*  This function attempts to get graphics working.
