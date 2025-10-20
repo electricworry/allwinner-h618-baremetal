@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include "clk/clk.h"
 #include "system.h"
-#include "display/sun8i-de2.h"
 #include "display/display.h"
 #include "edid.h"
 
