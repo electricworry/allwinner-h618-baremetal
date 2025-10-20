@@ -1,5 +1,8 @@
 // allwinner,sun50i-h6-dw-hdmi
 
+#ifndef HDMI_H
+#define HDMI_H
+
 #include "../util.h"
 
 #define HDMI_BASE             0x6000000 
@@ -1125,3 +1128,5 @@ enum {
 	HDMI_I2CM_CTLINT_ARB_POL = 0x8,
 	HDMI_I2CM_CTLINT_ARB_MASK = 0x4,
 };
+
+#endif

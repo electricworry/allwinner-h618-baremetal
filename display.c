@@ -174,10 +174,6 @@ void sun50i_h616_ccu_probe(void)
     SUN50I_H616_CCU_DRAM_BGR_REG |= BIT(0); // bus-dram
 
     // TODO?: Skipping the notifier registration
-    // SUN50I_H616_CCU_XXXXXXXXXXX &= ~BIT(16);
-    // SUN50I_H616_CCU_XXXXXXXXXXX |= BIT(16);
-    // SUN50I_H616_CCU_XXXXXXXXXXX &= ~BIT(16);
-    // SUN50I_H616_CCU_XXXXXXXXXXX &= ~BIT(0);
 }
 
 void sun6i_rtc_probe(void)
@@ -273,10 +269,10 @@ void reclaim_sram_c_and_erase(void)
     *((uint32_t *)(0x3000000  + 0x4)) = test & ~0x1000000;
     // test = *((uint32_t *)(0x3000000  + 0x4));
     // Erase the whole of DE. It contains uninitialized data.
-    for(uint64_t addr = DE_BASE; addr < (DE_BASE + 0x400000); addr += 4)
-    {
-        *(volatile uint32_t*)(addr) = 0;
-    }
+    // for(uint64_t addr = DE_BASE; addr < (DE_BASE + 0x400000); addr += 4)
+    // {
+    //     *(volatile uint32_t*)(addr) = 0;
+    // }
 }
 
 static bool hdmi_phy_wait_i2c_done(int msec)
@@ -319,35 +315,12 @@ void display_configure(void)
         etc.
     */
 
-
-        /*
-        * The DE33 requires these additional (unknown) registers set
-        * during initialisation.
-        */
-        DE_RANDOM_1_REG = DE_RANDOM_1_VAL;
-        DE_RANDOM_2_REG = DE_RANDOM_2_VAL;
-
-    // *((uint32_t *)0x07010190) = 0;
-    // *((uint32_t *)0x07000000) = 0;
-    // *((uint32_t *)0x07000014) = 0x429;
-    // *((uint32_t *)0x0300170c) = 0;
-    // *((uint32_t *)0x03001804) = 5;
-    // *((uint32_t *)0x03001830) = 0x8100000b;
-    // *((uint32_t *)0x0300184c) = 0x00030003;
-    // *((uint32_t *)0x0300197c) = 0x10001;
-    // *((uint32_t *)0x030019f0) = 0x10001;
-    // *((uint32_t *)0x03001a74) = 0xe0000000;
-    // *((uint32_t *)0x03001a8c) = 0x01620122;
-    // *((uint32_t *)0x03001ff0) = 0x20001;
-    // // *((uint32_t *)0x01008028) = 0xa980; // THIS!!!
-    // *((uint32_t *)0x07010190) = 0;
-    // *((uint32_t *)0x07010190) = 0;
-    // *((uint32_t *)0x07010190) = 0;
-    // *((uint32_t *)0x07010190) = 0;
-    // *((uint32_t *)0x07010190) = 0;
-    // *((uint32_t *)0x07010190) = 0;
-    // *((uint32_t *)0x07010190) = 0;
-    // *((uint32_t *)0x07010190) = 0;
+    /*
+    * The DE33 requires these additional (unknown) registers set
+    * during initialisation.
+    */
+    DE_RANDOM_1_REG = DE_RANDOM_1_VAL;
+    DE_RANDOM_2_REG = DE_RANDOM_2_VAL;
 
     uint32_t val;
     uint8_t bval;
@@ -607,7 +580,7 @@ void display_configure(void)
             await_irq_completion();
             edid[pos] = readb(HDMI_I2CM_DATAI);
         }
-        // HDMI_IH_MUTE_I2CM_STAT0 = 3
+        writeb(HDMI_IH_I2CM_STAT0_ERROR | HDMI_IH_I2CM_STAT0_DONE, HDMI_IH_MUTE_I2CM_STAT0);
         struct edid e = {0};
         parse_edid_structure(edid, &e);
         print_edid(&e);
@@ -719,10 +692,10 @@ void display_configure(void)
 	    /* Setup the polarity of multiple signals */
         // Quirk .polarity_in_ch0
         val = 0;
-		// if (mode->flags & DRM_MODE_FLAG_PHSYNC)
-		// 	val |= SUN4I_TCON0_IO_POL_HSYNC_POSITIVE;
-		// if (mode->flags & DRM_MODE_FLAG_PVSYNC)
-		// 	val |= SUN4I_TCON0_IO_POL_VSYNC_POSITIVE;
+		if (0)
+			val |= SUN4I_TCON0_IO_POL_HSYNC_POSITIVE;
+		if (0)
+			val |= SUN4I_TCON0_IO_POL_VSYNC_POSITIVE;
 
         SUN4I_TCON0_IO_POL_REG = val;
 	    /* Map output pins to channel 1 */
@@ -825,7 +798,6 @@ void display_configure(void)
                             * to low power mode.
                             */
                             for (i = 0; i < 5; ++i) {
-                                printf("LOOP1\n");
                                 bval = readb(HDMI_PHY_STAT0);
                                 if (!(bval & HDMI_PHY_TX_PHY_LOCK))
                                     break;
@@ -875,10 +847,8 @@ void display_configure(void)
                                 if (bval){
                                     break;
                                 }
-                                printf("LOOP2 %x\n", bval);
                                 udelay(2000);
                             }
-                            // udelay(2000);
                         }
                     /* END dw_hdmi_phy_init() */  // Screen does deep black here.
 
@@ -902,10 +872,10 @@ void display_configure(void)
                                 HDMI_MC_CLKDIS_PREPCLK_DISABLE |
                                 HDMI_MC_CLKDIS_TMDSCLK_DISABLE;
                         mc_clkdis &= ~HDMI_MC_CLKDIS_PIXELCLK_DISABLE;
-                        writeb(mc_clkdis, HDMI_MC_CLKDIS); // 0x7e <---- screen turns off here (i.e. signal lost)
+                        writeb(mc_clkdis, HDMI_MC_CLKDIS);
 
                         mc_clkdis &= ~HDMI_MC_CLKDIS_TMDSCLK_DISABLE;
-                        writeb(mc_clkdis, HDMI_MC_CLKDIS); // 0x7c <--- screen is a deep red here.
+                        writeb(mc_clkdis, HDMI_MC_CLKDIS);
 
                         /* Enable csc (colour space conversion) path */
                         if (/*is_csc_needed(hdmi)*/ 0) {
@@ -916,10 +886,10 @@ void display_configure(void)
                             //         HDMI_MC_FLOWCTRL);
                         } else {
                             mc_clkdis |= HDMI_MC_CLKDIS_CSCCLK_DISABLE;
-                            // writeb(mc_clkdis, HDMI_MC_CLKDIS);
+                            writeb(mc_clkdis, HDMI_MC_CLKDIS);
 
-                            // writeb(HDMI_MC_FLOWCTRL_FEED_THROUGH_OFF_CSC_BYPASS,
-                            //         HDMI_MC_FLOWCTRL);
+                            writeb(HDMI_MC_FLOWCTRL_FEED_THROUGH_OFF_CSC_BYPASS,
+                                    HDMI_MC_FLOWCTRL);
                         }
                     /* END dw_hdmi_enable_video_path */
 
@@ -1057,13 +1027,13 @@ void display_configure(void)
         SUN8I_MIXER_GLOBAL_CTL = SUN8I_MIXER_GLOBAL_CTL_RT_EN;
         SUN50I_MIXER_GLOBAL_CLK = 1;
 	    /* Set background color to black */
-        SUN8I_MIXER_BLEND_BKCOLOR = 0xffc0c0c0; // grey
+        SUN8I_MIXER_BLEND_BKCOLOR = SUN8I_MIXER_BLEND_COLOR_BLACK;
         /*
         * Set fill color of bottom plane to black. Generally not needed
         * except when VI plane is at bottom (zpos = 0) and enabled.
         */
         SUN8I_MIXER_BLEND_PIPE_CTL = SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0);
-        SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = 0xffcc00cc; // magenta
+        SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = SUN8I_MIXER_BLEND_COLOR_BLACK;
 
         plane_cnt = 1; //1 /* vi_num */ + 3 /* ui_num */;
         for (i = 0; i < plane_cnt; i++) {
@@ -1083,62 +1053,33 @@ void display_configure(void)
     val &= ~SUN8I_MIXER_BLEND_OUTCTL_INTERLACED;
     val |= 0;
     SUN8I_MIXER_BLEND_OUTCTL = val;
-    SUN8I_MIXER_BLEND_BKCOLOR = 0xffff0000; // red
-    SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = 0xffff8000; // orange
+    SUN8I_MIXER_BLEND_BKCOLOR = SUN8I_MIXER_BLEND_COLOR_BLACK;
+    SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = SUN8I_MIXER_BLEND_COLOR_BLACK;
     
-    // HHMMMM = 0xe4;
-    // *((uint32_t *)0x01008040) = 0x7;
-    // *((uint32_t *)0x01008044) = 0x7;
-    // *((uint32_t *)0x01008048) = 0x7;
-    // *((uint32_t *)0x0100804c) = 0x7;
-    
-    // *((uint32_t *)0x01008050) = 0x7;
-    // *((uint32_t *)0x01008054) = 0x7;
-    // *((uint32_t *)0x01008058) = 0x7;
-    // *((uint32_t *)0x0100805c) = 0x7;
-    
-    // *((uint32_t *)0x01008060) = 0x7;
-    // *((uint32_t *)0x01008064) = 0x7;
-    // *((uint32_t *)0x01008068) = 0x7;
-    // *((uint32_t *)0x0100806c) = 0x7;
-    
-    // *((uint32_t *)0x01008070) = 0x7;
-    // *((uint32_t *)0x01008074) = 0x7;
-    // *((uint32_t *)0x01008078) = 0x7;
-    // *((uint32_t *)0x0100807c) = 0x7;
-    
-    // *((uint32_t *)0x01008080) = 0x707;
-    // *((uint32_t *)0x01008084) = 0x7;
-    
-        // // START sun50i_fmt_setup()
-        // SUN50I_FMT_CTRL = 0;
-        // SUN50I_FMT_SIZE = SUN8I_MIXER_SIZE(800, 480);
-        // SUN50I_FMT_SWAP = 0;
-        // SUN50I_FMT_DEPTH = 0; // assume bit10 false
-        // SUN50I_FMT_FORMAT = 0; // Assume default colourspace
-        // SUN50I_FMT_COEF = 0;
-        // SUN50I_FMT_LMT_Y = (4095 << 16) | 0;
-        // SUN50I_FMT_LMT_C0 = (4095 << 16) | 0;
-        // SUN50I_FMT_LMT_C1 = (4095 << 16) | 0;
-        // SUN50I_FMT_CTRL = 1;
-        // // END sun50i_fmt_setup()
+        // START sun50i_fmt_setup()
+        SUN50I_FMT_CTRL = 0;
+        SUN50I_FMT_SIZE = SUN8I_MIXER_SIZE(800, 480);
+        SUN50I_FMT_SWAP = 0;
+        SUN50I_FMT_DEPTH = 0; // assume bit10 false
+        SUN50I_FMT_FORMAT = 0; // Assume default colourspace
+        SUN50I_FMT_COEF = 0;
+        SUN50I_FMT_LMT_Y = (4095 << 16) | 0;
+        SUN50I_FMT_LMT_C0 = (4095 << 16) | 0;
+        SUN50I_FMT_LMT_C1 = (4095 << 16) | 0;
+        SUN50I_FMT_CTRL = 1;
+        // END sun50i_fmt_setup()
 // FIN sunxi_engine_mode_set()/sun8i_mixer_mode_set()
 
 /* BEGIN sun8i_ui_layer_update_coord */
             // channel/layer = 1
             // overlay = 0
             SUN8I_MIXER_CHAN_UI_LAYER_SIZE(0) = SUN8I_MIXER_SIZE(800, 480); // insize
-            udelay(200);
             SUN8I_MIXER_CHAN_UI_OVL_SIZE = SUN8I_MIXER_SIZE(800, 480); // insize
-            udelay(200);
             // No scaling required
                 // sun8i_vi_scaler_disable(mixer, 1)
-	            // SUN8I_SCALER_VSU_CTRL = 0;
+	            SUN8I_SCALER_VSU_CTRL = 0;
             SUN8I_MIXER_BLEND_ATTR_COORD(0 /*zpos*/) = SUN8I_MIXER_COORD(0, 0);
-            udelay(200);
-            SUN8I_MIXER_BLEND_ATTR_INSIZE(0 /*zpos*/) = SUN8I_MIXER_SIZE(800, 480); // outsize  // just this should turn display from orange to black (or red?). It turns red.
-            udelay(200);
-            // return;
+            SUN8I_MIXER_BLEND_ATTR_INSIZE(0 /*zpos*/) = SUN8I_MIXER_SIZE(800, 480); // outsize
 /* END sun8i_ui_layer_update_coord */
 
 /* START sun8i_ui_layer_update_formats */
@@ -1157,7 +1098,6 @@ void display_configure(void)
             SUN8I_MIXER_CHAN_UI_LAYER_PITCH(0) = 800*4; // 800 * 4?
             // Address is just the start of the gem->dma_addr, no offset required
             SUN8I_MIXER_CHAN_UI_LAYER_TOP_LADDR(0) = (uint32_t)(uint64_t)framebufferz;
-            // udelay(2000);
 /* END sun8i_ui_layer_update_buffer!!! */
 
 /* BEGIN sun8i_mixer_commit */
@@ -1169,163 +1109,16 @@ void display_configure(void)
                     uint32_t route = 1 << SUN8I_MIXER_BLEND_ROUTE_PIPE_SHIFT(0 /*zpos*/); // i.e. place ch1 at zpos=0
                     uint32_t pipe_en = SUN8I_MIXER_BLEND_PIPE_CTL_EN(0/*zpos*/); // Enable zpos=0
                     SUN8I_MIXER_BLEND_ROUTE = route;
-                    SUN8I_MIXER_BLEND_PIPE_CTL = (pipe_en | SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0)); // Orange again. Should be black (i.e. on framebuffer!)
+                    SUN8I_MIXER_BLEND_PIPE_CTL = (pipe_en | SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(0));
                     SUN50I_MIXER_GLOBAL_DBUFF = SUN8I_MIXER_GLOBAL_DBUFF_ENABLE;
 /* END sun8i_mixer_commit */ // <- This should replace red background with the framebuffer
 
-// SUN8I_MIXER_GLOBAL_CTL2 = 0x1d;
 SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = 0xffff8000;
-SUN8I_MIXER_GLOBAL_STATUS = ~BIT(8);
+SUN8I_MIXER_GLOBAL_STATUS = ~BIT32(8);
     SUN8I_MIXER_BLEND_OUTCTL &= ~SUN8I_MIXER_BLEND_OUTCTL_INTERLACED;
 
-	uint64_t ptr;
-	uint32_t val1, val2, val3, val4;
-
-	printf("======= CLK ========\n");
-	for (ptr = 0x1008000; ptr < 0x1008100; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-
-	printf("======= TOP ========\n");
-	for (ptr = 0x1008100; ptr < 0x1008140; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-
-	printf("======= R_CCU ========\n");
-	for (ptr = 0x7010000; ptr < 0x7010210; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-
-	printf("======= RTC ========\n");
-	for (ptr = 0x7000000; ptr < 0x7000400; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-
-	printf("======= CCU ========\n");
-	for (ptr = 0x3001000; ptr < 0x3002000; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-
-
-
-
-
-
-
-	printf("======= BLENDER ========\n");
-	for (ptr = 0x1281000; ptr < 0x1281100; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-
-	printf("======= FMT ========\n");
-	for (ptr = 0x1285000; ptr < 0x1285100; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-
-	printf("======= ch0 ========\n");
-	for (ptr = 0x1101000; ptr < 0x1101100; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-
-	printf("======= ch1 ========\n");
-	for (ptr = 0x1121000; ptr < 0x1121100; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-	printf("======= ch2 ========\n");
-	for (ptr = 0x1141000; ptr < 0x1141100; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-	printf("======= ch3 ========\n");
-	for (ptr = 0x1161000; ptr < 0x1161100; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-	printf("======= ch4 ========\n");
-	for (ptr = 0x1181000; ptr < 0x1181100; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-	printf("======= ch5 ========\n");
-	for (ptr = 0x11a1000; ptr < 0x11a1100; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-	printf("======= ch6 ========\n");
-	for (ptr = 0x11c1000; ptr < 0x11c1100; ptr += 16)
-	{
-        val1 = *((uint32_t *)(ptr));
-        val2 = *((uint32_t *)(ptr+4));
-        val3 = *((uint32_t *)(ptr+8));
-        val4 = *((uint32_t *)(ptr+12));
-        printf("%08x  %08x %08x  %08x %08x\n", ptr, val1, val2, val3, val4);
-	}
-
-    printf("0x%x\n", *(uint32_t*)0x4031aaa0);
-
     for (uint32_t x = 0; x < 1000*1000; x++) {
-        framebufferz[x] = 0xff00ffff;
+        framebufferz[x] = 0xff0000ff;
     }
 }
 
@@ -1339,5 +1132,4 @@ void display_init()
     clocks_init();
     reclaim_sram_c_and_erase();
     display_configure();
-    printf("SUN8I_MIXER_CHAN_UI_LAYER_TOP_LADDR(0) %x\n", SUN8I_MIXER_CHAN_UI_LAYER_TOP_LADDR(0));
 }

@@ -1,5 +1,8 @@
 // allwinner,sun8i-r40-tcon-tv
 
+#ifndef TCON_H
+#define TCON_H
+
 #include "../util.h"
 
 // From TCON_TV
@@ -46,3 +49,5 @@
 #define SUN4I_TCON1_BASIC5_V_SYNC(height)		(((height) - 1) & 0x3ff)
 
 #define SUN4I_TCON0_IO_POL_REG			*(volatile uint32_t *)(SUN4I_TCON_BASE + 0x88)
+
+#endif

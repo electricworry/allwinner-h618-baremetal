@@ -4,6 +4,7 @@
 #define BITS_PER_LONG 64
 #define UL (unsigned long)
 #define BIT(nr)         ((1UL) << (nr))
+#define BIT32(nr)         ((1) << (nr))
 /* INCORRECT:
 #define GENMASK(h, l)   (((~((unsigned int)0)) << (l)) & (~(0) >> (32 - 1 - (h)))) */
 #define GENMASK(h, l) \

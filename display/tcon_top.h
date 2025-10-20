@@ -1,5 +1,8 @@
 // allwinner,sun50i-h6-tcon-top
 
+#ifndef TCON_TOP_H
+#define TCON_TOP_H
+
 #include "../util.h"
 
 // From TCON_TOP
@@ -16,3 +19,5 @@
 #define TCON_TOP_TCON_DSI_GATE			16
 #define TCON_TOP_CLK_NUM				3
 #define TCON_TOP_
+
+#endif
