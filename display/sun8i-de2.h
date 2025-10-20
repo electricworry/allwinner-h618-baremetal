@@ -1,11 +1,9 @@
-/*  This isn't really a clock file. Improve how this is stored later.
-*/
-
-#ifndef CCU_SUN8I_DE2_H
-#define CCU_SUN8I_DE2_H
-
 // allwinner,sun50i-a64-de2
 // bus@1000000
+
+#ifndef SUN8I_DE2_H
+#define SUN8I_DE2_H
+
 #define DE_BASE 0x1000000
 
 // allwinner,sun50i-h616-de33-clk
@@ -15,7 +13,6 @@
 #define DE33_CLK_BUS_MIXER0       *(volatile uint32_t *)(DE33_CLK_BASE + 0x0004)
 #define DE33_CLK_RST_MIXER0       *(volatile uint32_t *)(DE33_CLK_BASE + 0x0008)
 #define DE33_CLK_MIXER0_DIV       *(volatile uint32_t *)(DE33_CLK_BASE + 0x000C)
-#define HHMMMM       *(volatile uint32_t *)(DE33_CLK_BASE + 0x10)
 #define DE_RANDOM_1_REG           *(volatile uint32_t *)(DE33_CLK_BASE + 0x0024)
 #define DE_RANDOM_1_VAL           0x0
 #define DE_RANDOM_2_REG           *(volatile uint32_t *)(DE33_CLK_BASE + 0x0028)
@@ -36,7 +33,7 @@
 #define SUN8I_MIXER_GLOBAL_DBUFF_ENABLE		BIT(0)
 #define SUN8I_MIXER_GLOBAL_CTL_RT_EN  BIT(0)
 
-// [0] 0x100000 BASE (mixer->engine.regs)
+// 0x100000 BASE (mixer->engine.regs)
 #define DE33_MIXER_BASE              (DE_BASE + 0x100000)
 // We'll just use UI0 (layer/channel #1), which is mapped to 6
 #define SUN8I_CHANNEL_BASE                           (6 * 0x20000 + 0x1000) /* see sun8i_channel_base() */
@@ -49,9 +46,9 @@
 #define SUN8I_VI_SCALAR_BASE                         (6 * 0x20000 + 0x1000 + 0x3000)
 #define SUN8I_SCALER_VSU_CTRL	                    *(volatile uint32_t *)(DE33_MIXER_BASE + SUN8I_VI_SCALAR_BASE + 0x0)
 
-// [2] 0x280000 DISP (mixer->disp_regs)
+// 0x280000 DISP (mixer->disp_regs)
 #define DE33_MIXER_DISP_REGS_BASE    (DE_BASE + 0x280000)
-// [2.1] Within DISP there is BLENDER at 0x1000
+// Within DISP there is BLENDER at 0x1000
 #define DE2_BLD_BASE 0x1000 /* Blender Base */
 #define SUN8I_MIXER_BLEND_PIPE_CTL          *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x0)
 #define SUN8I_MIXER_BLEND_ROUTE		        *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0x80)
@@ -64,7 +61,7 @@
 #define SUN8I_MIXER_BLEND_OUTCTL	    	*(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + DE2_BLD_BASE + 0xfc)
 #define SUN8I_MIXER_BLEND_ROUTE_PIPE_SHIFT(n)	((n) << 2)
 #define SUN8I_MIXER_COORD(x, y)			     ((y) << 16 | (x))
-// [2.2] Within DISP there is Formatter? at 0x5000
+// Within DISP there is Formatter? at 0x5000
 #define SUN50I_FMT_DE33 0x5000
 #define SUN50I_FMT_CTRL                     *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + SUN50I_FMT_DE33 + 0x00)
 #define SUN50I_FMT_SIZE                     *(volatile uint32_t *)(DE33_MIXER_DISP_REGS_BASE + SUN50I_FMT_DE33 + 0x04)
@@ -78,7 +75,7 @@
 
 /* colors are always in AARRGGBB format TODO: Make black */
 // #define SUN8I_MIXER_BLEND_COLOR_BLACK		0xff4e8a1f
-#define SUN8I_MIXER_BLEND_COLOR_BLACK		0xffff0000
+#define SUN8I_MIXER_BLEND_COLOR_BLACK		0xff000000
 #define SUN8I_MIXER_BLEND_PIPE_CTL_EN(pipe)	BIT(8 + pipe)
 #define SUN8I_MIXER_BLEND_PIPE_CTL_EN_MSK	GENMASK(12, 8)
 #define SUN8I_MIXER_BLEND_PIPE_CTL_FC_EN(pipe)	BIT(pipe)

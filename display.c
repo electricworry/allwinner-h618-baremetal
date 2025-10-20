@@ -5,13 +5,14 @@
 #include <stdio.h>
 #include "clk/clk.h"
 #include "system.h"
-#include "display.h"
+#include "display/sun8i-de2.h"
+#include "display/display.h"
 #include "edid.h"
 
 /*
 Max width: 8192
 Max height: 8192
-Max clock: ????
+Max clock: "Controller support maximum of 594 MHz, which correlates to 4K@60Hz 4:4:4 or RGB."
 */
 
 volatile uint32_t* active_buffer;

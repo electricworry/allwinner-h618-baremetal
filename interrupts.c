@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "uart.h"
 #include "interrupts.h"
-#include "display.h"
 #include "util.h"
 
 void complete_irq_hdmi(void);

@@ -1,6 +1,11 @@
-TCON TOP linux/Documentation/devicetree/bindings/display/allwinner,sun8i-r40-tcon-top.yaml
+# Notes on various things
 
-TCON TOP is like a switch. Our DT for H6128 shows that our pipeline is like this:
+## Graphics
+
+The Display Engine defines a pipeline which is [documented]
+(linux/Documentation/devicetree/bindings/display/allwinner,sun8i-r40-tcon-top.yaml).
+
+TCON TOP is like a switch. Our DT for H618 shows that our pipeline is like this:
 
    mixer0
           \
@@ -17,7 +22,7 @@ And so when sun4i_drv_bind() is called, the following bind() functions are calle
 
 Each of these components are part of the DE, which runs the show.
 
-## HDMI PHY
+### HDMI PHY
 
 This IP block is not part of the component framwork, but it is an essential part
 of the graphics.
@@ -26,7 +31,7 @@ On sun8i_hdmi_phy_init() (which is called by HDMI) various bespoke registers
 of the HDMI PHY are poked which will magically cause the HDMI block to start
 working.
 
-## Display Engine
+### Display Engine
 
 The sun4i DE is in (sun4i_drv.c).
 
@@ -38,7 +43,7 @@ working and outputting graphics.
 This working is completely dependant on the bespoke driver functions in each
 of the following sub-components.
 
-## Mixer
+### Mixer
 
 The Mixer implements various `struct sunxi_engine_ops`, which are pointed to by
 the `struct sunxi_engine`.
@@ -46,7 +51,7 @@ the `struct sunxi_engine`.
 The mixer implements multiple UI/VI layers. These are implemented in their own
 C files.
 
-## TCON TOP
+### TCON TOP
 
 This is the most trivial part of the pipeline.
 
@@ -61,7 +66,7 @@ are two functions that can be called to pull these levers:
 
 The sun4i TCON will use these functions to control the gates.
 
-## TCON
+### TCON
 
 sun4i_tcon_bind() sets up this driver.
 
@@ -70,7 +75,7 @@ sun8i_r40_tcon_tv_set_mux() will be called to set the TCON TOP gates.
 sun4i_tcon_mode_set() will be called by the CRTC to set the TCON up for the
 output display mode (which will have been discovered via DDC (EDID)).
 
-## HDMI
+### HDMI
 
 sun8i_dw_hdmi_bind() sets up this driver.
 
@@ -92,7 +97,7 @@ following path:
 - hdmi_phy_configure
 - dw_hdmi_phy_power_on
 
-## CRTC
+### CRTC
 
 The CRTC is created by the TCON when sun4i_tcon_bind() calls sun4i_crtc_init().
 
@@ -104,7 +109,7 @@ Various CRTC helper functions are defined here for the kernel to call.
 ## Clocks
 
 ```
-We must set the "tmds" <&ccu CLK_HDMI> to the pixelclock (108MHz)
+We must set the "tmds" <&ccu CLK_HDMI> to the pixelclock (defined by monitor)
 static const char * const hdmi_parents[] = { "pll-video0", "pll-video0-4x",
 				     "pll-video2", "pll-video2-4x" };
 static SUNXI_CCU_M_WITH_MUX_GATE(hdmi_clk, "hdmi", hdmi_parents, 0xb00,
@@ -147,11 +152,10 @@ const struct clk_ops ccu_nm_ops = {
 In the Linux clk framework the following calls are made:
 
 determine_rate - This gives the driver the opportunity to change the rate. In a
-div(mux) clk 
-
+div(mux) clk.
 ```
 
-## Debugging clocks
+### Debugging clocks
 
 If you set a breakpoint on `clk_set_rate` there will be an opaque clk as param0.
 To see what this clock is, print `clk->core->hw`. This will show the actual clock.

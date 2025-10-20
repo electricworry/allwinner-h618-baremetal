@@ -1,4 +1,4 @@
-#include "util.h"
+#include "../util.h"
 
 // The HDMI registers base address.
 #define DE_BASE               0x1000000 // allwinner,sun50i-a64-de2 + allwinner,sun50i-h616-de33-clk

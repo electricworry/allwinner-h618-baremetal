@@ -20,4 +20,3 @@ struct port_registers {
 
 void set_pin_mode(uint64_t port, uint32_t pin, uint32_t mode);
 void set_pin_data(uint64_t port, uint32_t pin, uint32_t data);
-void gpio_init();

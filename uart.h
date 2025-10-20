@@ -12,7 +12,6 @@
 #define UART0_LSR *(volatile uint32_t *)(UART0_BASE + 0x14)
 #define UART0_USR *(volatile uint32_t *)(UART0_BASE + 0x7C)
 
-void uart_init();
 void uart_print(const char* str);
 void uart_print_uint8(unsigned char number);
 void uart_print_uint32(uint32_t number);
