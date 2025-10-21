@@ -5,7 +5,11 @@
 #include <stdio.h>
 #include "clk/clk.h"
 #include "system.h"
-#include "display/display.h"
+#include "display/hdmi_phy.h"
+#include "display/hdmi.h"
+#include "display/sun8i-de2.h"
+#include "display/tcon_top.h"
+#include "display/tcon.h"
 #include "edid.h"
 
 /*

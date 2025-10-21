@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "ports.h"
 #include "system.h"
-#include "display/display.h"
+#include "display.h"
 
 int main(int argc, char *argv[])
 {

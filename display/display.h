@@ -1,5 +1,0 @@
-#include "hdmi_phy.h"
-#include "hdmi.h"
-#include "sun8i-de2.h"
-#include "tcon_top.h"
-#include "tcon.h"
