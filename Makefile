@@ -3,7 +3,7 @@ TOOLCHAIN=external/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf/bin
 CC=$(TOOLCHAIN)/aarch64-none-elf-gcc
 OBJCOPY=$(TOOLCHAIN)/aarch64-none-elf-objcopy
 
-.PHONY: test-edid clean install
+.PHONY: test-edid clean install FORCE
 
 install: src/os.bin external/u-boot/spl/sunxi-spl.bin
 	sunxi-fel spl external/u-boot/spl/sunxi-spl.bin write 0x40000000 src/os.bin reset64 0x40000000
@@ -17,7 +17,7 @@ clean:
 	cd external/trusted-firmware-a && make clean
 	cd external/u-boot && make clean && rm -f bl31.bin
 
-src/os.bin: $(CC) $(OBJCOPY)
+src/os.bin: $(CC) $(OBJCOPY) FORCE
 	make -C src
 
 external/u-boot/spl/sunxi-spl.bin: external/u-boot/bl31.bin $(CC)
