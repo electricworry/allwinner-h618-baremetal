@@ -1121,8 +1121,10 @@ SUN8I_MIXER_BLEND_ATTR_FCOLOR(0) = 0xffff8000;
 SUN8I_MIXER_GLOBAL_STATUS = ~BIT32(8);
     SUN8I_MIXER_BLEND_OUTCTL &= ~SUN8I_MIXER_BLEND_OUTCTL_INTERLACED;
 
-    for (uint32_t x = 0; x < 1000*1000; x++) {
-        framebufferz[x] = 0xff0000ff;
+    for (uint32_t x = 200; x < 400; x++) {
+        for (uint32_t y = 50; y < 100; y++) {
+            framebufferz[y*800 + x] = 0xff0000ff;
+        }
     }
 }
 
@@ -1130,7 +1132,7 @@ SUN8I_MIXER_GLOBAL_STATUS = ~BIT32(8);
 */
 void display_init()
 {
-    for (uint32_t x = 0; x < 1000*1000; x++) {
+    for (uint32_t x = 0; x < 800*480; x++) {
         framebufferz[x] = 0xff00ff00;
     }
     clocks_init();
