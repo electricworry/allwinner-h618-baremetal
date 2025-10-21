@@ -16,7 +16,7 @@ void udelay(uint32_t d) {
     // {
     //     asm volatile("NOP \n");
     // }
-    for(uint32_t n=0;n<d*200;n++) asm("NOP");
+    for(uint32_t n=0;n<d*3;n++) asm("NOP");
 }
 
 void reboot(uint32_t seconds) {
