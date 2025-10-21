@@ -20,7 +20,7 @@ clean:
 src/os.bin: $(CC) $(OBJCOPY)
 	make -C src
 
-external/u-boot/u-boot-sunxi-with-spl.bin: external/u-boot/bl31.bin $(CC)
+external/u-boot/spl/sunxi-spl.bin: external/u-boot/bl31.bin $(CC)
 	cd external/u-boot && \
 	    make orangepi_zero3_defconfig && \
 		CROSS_COMPILE=aarch64-none-elf- make -j`nproc`
