@@ -20,6 +20,7 @@ The original [author](https://github.com/catphish) provided the the repository
 under the MIT license. As I'm stealing a lot of code from the kernel, this is
 released under [GPL2](LICENSE).
 
-Copyright: 2018 Charlie Smurthwaite
-           Multiple Linux kernel authors
-           2025 Electric Worry
+Copyright
+* 2018 Charlie Smurthwaite
+* Multiple Linux kernel authors
+* 2025 Electric Worry

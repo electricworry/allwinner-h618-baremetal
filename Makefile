@@ -1,40 +1,36 @@
-TOOLCHAIN=../extern/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf/bin
+export PATH := $(PWD)/external/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf/bin:$(PATH)
+TOOLCHAIN=external/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf/bin
 CC=$(TOOLCHAIN)/aarch64-none-elf-gcc
 OBJCOPY=$(TOOLCHAIN)/aarch64-none-elf-objcopy
-# CFLAGS=-T linker.ld -mfpu=neon -mfloat-abi=hard -mcpu=cortex-a7 -fpic -ffreestanding -O3 -nostdlib -Wextra
-CFLAGS=-T linker.ld -mcpu=cortex-a53 -O0 -Wextra
 
-.PHONY: edid-test
+.PHONY: test-edid clean install
 
-os.bin: os.elf
-	$(OBJCOPY) -O binary --remove-section .uncached os.elf os.bin
-os.elf: linker.ld boot.o main.o uart.o ports.o system.o display.o interrupts.o edid.o
-	$(CC) $(CFLAGS) -o os.elf boot.o main.o uart.o ports.o system.o display.o interrupts.o edid.o -lm
+install: src/os.bin external/u-boot/spl/sunxi-spl.bin
+	sunxi-fel spl external/u-boot/spl/sunxi-spl.bin write 0x40000000 src/os.bin reset64 0x40000000
 
-boot.o: boot.s
-	$(CC) $(CFLAGS) -c boot.s
-main.o: main.c
-	$(CC) $(CFLAGS) -c main.c
-uart.o: uart.c
-	$(CC) $(CFLAGS) -c uart.c
-ports.o: ports.c
-	$(CC) $(CFLAGS) -c ports.c
-system.o: system.c
-	$(CC) $(CFLAGS) -c system.c
-display.o: display.c
-	$(CC) $(CFLAGS) -c display.c
-edid.o: edid.c
-	$(CC) $(CFLAGS) -c edid.c
+$(CC) $(OBJCOPY):
+	utils/download.sh
+	cd external && tar -xf arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf.tar.xz
 
 clean:
-	rm -f *.o os.*
+	make -C src clean
+	cd external/trusted-firmware-a && make clean
+	cd external/u-boot && make clean && rm -f bl31.bin
 
-install: os.bin ../u-boot/spl/sunxi-spl.bin
-	sunxi-fel spl ../u-boot/spl/sunxi-spl.bin write 0x40000000 os.bin reset64 0x40000000
+src/os.bin: $(CC) $(OBJCOPY)
+	make -C src
 
-../u-boot/spl/sunxi-spl.bin:
-	cd .. && make u-boot/u-boot-sunxi-with-spl.bin
+external/u-boot/u-boot-sunxi-with-spl.bin: external/u-boot/bl31.bin $(CC)
+	cd external/u-boot && \
+	    make orangepi_zero3_defconfig && \
+		CROSS_COMPILE=aarch64-none-elf- make -j`nproc`
 
-edid-test:
-	gcc -o edid-test edid.c edid-test.c -lm
-	./edid-test
+external/u-boot/bl31.bin:
+	cd external/trusted-firmware-a && \
+		make PLAT=sun50i_h616 DEBUG=1 bl31
+	cd external/u-boot && \
+		ln -s ../trusted-firmware-a/build/sun50i_h616/debug/bl31.bin
+
+test-edid:
+	make -C src edid-test
+	./src/edid-test

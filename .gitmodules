@@ -1,0 +1,6 @@
+[submodule "external/u-boot"]
+	path = external/u-boot
+	url = https://source.denx.de/u-boot/u-boot.git
+[submodule "external/trusted-firmware-a"]
+	path = external/trusted-firmware-a
+	url = https://github.com/TrustedFirmware-A/trusted-firmware-a.git
