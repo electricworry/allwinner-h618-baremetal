@@ -3,19 +3,26 @@ TOOLCHAIN=external/arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf/bin
 CC=$(TOOLCHAIN)/aarch64-none-elf-gcc
 OBJCOPY=$(TOOLCHAIN)/aarch64-none-elf-objcopy
 
-.PHONY: test-edid clean install FORCE
+.PHONY: install console clean test-edid FORCE
 
 install: src/os.bin external/u-boot/spl/sunxi-spl.bin
 	sunxi-fel spl external/u-boot/spl/sunxi-spl.bin write 0x40000000 src/os.bin reset64 0x40000000
 
-$(CC) $(OBJCOPY):
-	utils/download.sh
-	cd external && tar -xf arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf.tar.xz
+console:
+	tio /dev/ttyUSB0
 
 clean:
 	make -C src clean
 	cd external/trusted-firmware-a && make clean
 	cd external/u-boot && make clean && rm -f bl31.bin
+
+test-edid:
+	make -C src edid-test
+	./src/edid-test
+
+$(CC) $(OBJCOPY):
+	utils/download.sh
+	cd external && tar -xf arm-gnu-toolchain-14.3.rel1-x86_64-aarch64-none-elf.tar.xz
 
 src/os.bin: $(CC) $(OBJCOPY) FORCE
 	make -C src
@@ -30,7 +37,3 @@ external/u-boot/bl31.bin:
 		make PLAT=sun50i_h616 DEBUG=1 bl31
 	cd external/u-boot && \
 		ln -s ../trusted-firmware-a/build/sun50i_h616/debug/bl31.bin
-
-test-edid:
-	make -C src edid-test
-	./src/edid-test
